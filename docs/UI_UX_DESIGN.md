@@ -9,12 +9,12 @@ This document contains the visual design requirements and user experience guidel
 The interface consists of two primary modal panels operating independently:
 
 ### Left Modal - Class Joining Interface
-- **Header**: "Join 302 Science" with back navigation ("< Back to Class List")
+- **Header**: "Join 302 Science" with back navigation ("< Back to Class List") - left-aligned
 - **Close Button**: X button in top-right corner
 - **Class Information Section**:
-  - Class ID: "X58E9647" with blue copy button
-  - Join Link: with blue copy button for easy sharing
-- **QR Code Display**: Large, high-contrast QR code for mobile scanning
+  - ID: "X58E9647" with blue copy button (left-aligned in same line with Link)
+  - Link: blue copy button only (no URL display) for easy sharing
+- **QR Code Display**: Large QR code (360x360px) for mobile scanning with 5% margin from container (no title, maximized to fit both height and width within left modal)
 - **Version Information**: "Version 1.1.7" displayed at bottom
 
 ### Right Modal - Student Management Interface
@@ -58,7 +58,8 @@ The interface consists of two primary modal panels operating independently:
 - **Button Text**: Medium, 12px for copy buttons and controls
 
 ### Layout Specifications
-- **Modal Width**: Approximately 600px each
+- **Left Modal Width**: Approximately 400px for optimal QR code display with responsive layout
+- **Right Modal Width**: Approximately 800px for 5-column student grid
 - **Student Cards**: Equal width in 5-column grid
 - **Card Height**: Consistent across all student entries
 - **Spacing**: 8px gap between student cards

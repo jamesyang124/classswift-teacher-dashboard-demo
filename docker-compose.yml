@@ -8,8 +8,8 @@ services:
       dockerfile: Dockerfile.dev
     ports:
       - "5173:5173"
-    volumes:
-      - /app/node_modules
+#    volumes:
+#      - ./frontend:/app
     environment:
       - VITE_API_URL=http://localhost:3000
       - VITE_WS_URL=ws://localhost:3000
@@ -20,11 +20,10 @@ services:
         - action: sync
           path: ./frontend/src
           target: /app/src
-        - action: sync
-          path: ./frontend/public
-          target: /app/public
         - action: rebuild
           path: ./frontend/package.json
+        - action: rebuild
+          path: ./frontend/node_modules
 
   # Backend - Go Gin API (commented out for frontend-first development)
   # backend:
