@@ -1,11 +1,39 @@
 # ClassSwift Teacher Dashboard
 
-[![React](https://img.shields.io/badge/React-18+-61DAFB?style=flat&logo=react&logoColor=white)](https://reactjs.org/)
-[![Go](https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat&logo=go&logoColor=white)](https://golang.org/)
+[![React](https://img.shields.io/badge/React-19.1+-61DAFB?style=flat&logo=react&logoColor=white)](https://reactjs.org/)
+[![Vite](https://img.shields.io/badge/Vite-6.3+-646CFF?style=flat&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go&logoColor=white)](https://golang.org/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker&logoColor=white)](https://docker.com/)
 [![Documentation](https://img.shields.io/badge/Documentation-Complete-green?style=flat&logo=gitbook&logoColor=white)](docs/README.md)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat)](LICENSE)
 
 A comprehensive classroom management system that enables teachers to track student engagement, manage groups, and facilitate seamless class joining through QR codes and real-time synchronization.
+
+## Quick Start
+
+### Prerequisites
+- Docker Desktop (includes Docker Compose)
+- Git
+- Make (optional, for convenient commands)
+
+### Development Setup
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd classswift-teacher-dashboard-demo
+
+# Start development environment (choose one)
+make dev                    # Using Makefile (recommended)
+docker-compose up --watch   # Direct Docker Compose command
+```
+
+**Access Points:**
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:3000
+- Database Admin: http://localhost:8080 (Adminer)
+- PostgreSQL: localhost:5432
+- Redis: localhost:6379
 
 ## Features
 
@@ -29,22 +57,25 @@ A comprehensive classroom management system that enables teachers to track stude
 ## Technology Stack
 
 ### Frontend
-- **React 18** with TypeScript for type-safe development
+- **React 19.1** with TypeScript for type-safe development
+- **Vite** for lightning-fast development and optimized builds
 - **Redux Toolkit** for predictable state management
 - **Styled Components** for component-based styling
 - **WebSocket Client** for real-time communication
 
 ### Backend
-- **Go** with Gin framework for high-performance API
+- **Go 1.21** with Gin framework for high-performance API
+- **Air** for live reload in development
 - **WebSocket Server** for real-time synchronization
-- **PostgreSQL** database for data persistence
+- **PostgreSQL 15** database for data persistence
+- **Redis** for session storage and WebSocket state
 - **RESTful API** with standardized JSON responses
 
-### Development Tools
-- **WireMock** for API mocking during frontend development
-- **Jest** for frontend testing
-- **Go Test** for backend unit testing
-- **ESLint & Prettier** for code quality
+### Development Environment
+- **Docker Compose** with Docker Watch for live reloading
+- **Multi-container orchestration** (frontend, backend, database, cache)
+- **Volume mounting** for instant code changes
+- **Adminer** for database administration
 
 ## Project Status
 
@@ -98,19 +129,61 @@ The application features a clean dual-modal interface:
 
 *See [WIRE_FRAME.png](docs/WIRE_FRAME.png) for complete visual reference.*
 
-## Getting Started
+## Development Commands
 
-### Prerequisites
-- Node.js 18+ for frontend development
-- TypeScript 5.0+ (installed via npm)
-- Go 1.24+ for backend development
-- PostgreSQL 15+ for database
-- Redux Toolkit 2.0+ (installed via npm)
-- Modern browser with WebSocket support
+Simple Makefile commands for common Docker operations:
 
-### Development Setup
+```bash
+make help     # Show available commands
+make dev      # Start development with live reloading
+make up       # Start services in background
+make down     # Stop all services
+make logs     # Show service logs
+make clean    # Clean restart (removes data)
+```
 
-*Note: Implementation will begin with Sprint 1 on June 20, 2025. Setup commands will be added as the codebase is developed.*
+### Quick Development Workflow
+
+```bash
+# Start development
+make dev
+
+# View logs (in another terminal)
+make logs
+
+# Clean restart when needed
+make clean
+```
+
+### Architecture Overview
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │    Backend      │    │   Database      │
+│   React + Vite  │◄──►│   Go + Gin      │◄──►│  PostgreSQL     │
+│   Port: 5173    │    │   Port: 3000    │    │   Port: 5432    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 ▼
+                    ┌─────────────────┐
+                    │     Redis       │
+                    │   Port: 6379    │
+                    └─────────────────┘
+```
+
+### Individual Development (Alternative)
+```bash
+# Frontend (requires Node.js 20+)
+cd frontend
+npm install
+npm run dev
+
+# Backend (requires Go 1.21+)
+cd backend
+go mod download
+air
+```
 
 ### Documentation
 
@@ -128,12 +201,21 @@ The application features a clean dual-modal interface:
 
 ## Contributing
 
-This project follows a documentation-first development approach:
+This project follows a documentation-first development approach with Docker-based development:
 
-1. **Review Documentation**: Start with `docs/README.md` for complete navigation
-2. **Follow Guidelines**: Check `.llm/code_review_prompt.md` before making changes
-3. **Maintain Consistency**: Ensure code aligns with documented specifications
-4. **Update Documentation**: Modify relevant docs if requirements change
+1. **Start with Docker**: Use `make dev` for full-stack development
+2. **Review Documentation**: Start with `docs/README.md` for complete navigation
+3. **Follow Guidelines**: Check `.llm/code_review_prompt.md` before making changes
+4. **Maintain Consistency**: Ensure code aligns with documented specifications
+5. **Test in Containers**: All development and testing should work in Docker environment
+6. **Update Documentation**: Modify relevant docs if requirements change
+
+### Docker Development Workflow
+- Use `make dev` or `make frontend-dev` for instant code reloading
+- Frontend changes sync automatically to container
+- Backend restarts with Air on Go file changes
+- Database and Redis available for integration testing
+- All services networking configured automatically
 
 ## Development Timeline
 
@@ -141,10 +223,10 @@ This project follows a documentation-first development approach:
 
 *For detailed sprint planning, deliverables, and risk mitigation, see [DEVELOPMENT_SPRINT_PLANNING.md](docs/DEVELOPMENT_SPRINT_PLANNING.md)*
 
-- **Sprint 1 (June 20)**: Frontend setup + Left modal UI + WireMock integration
-- **Sprint 2 (June 21)**: Right modal UI + Go backend setup  
-- **Sprint 3 (June 22)**: Backend APIs + Frontend-backend integration
-- **Sprint 4 (June 23)**: Testing, optimization & deployment
+- **Sprint 1 (June 20)**: Docker setup + Frontend container + Left modal UI
+- **Sprint 2 (June 21)**: Backend container + Right modal UI + Database integration  
+- **Sprint 3 (June 22)**: Backend APIs + Frontend-backend integration + WebSocket setup
+- **Sprint 4 (June 23)**: Testing, optimization & production Docker builds
 
 ## License
 

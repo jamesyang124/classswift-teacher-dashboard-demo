@@ -6,6 +6,23 @@ This document contains the technical specifications and design patterns for the 
 
 ## Data Structure & API Design
 
+### Frontend Technology Stack
+- **React**: 19.1.0 with enhanced concurrent features
+- **TypeScript**: Strict type checking enabled
+- **Redux Toolkit**: Latest version for modern Redux with built-in best practices
+- **React-Redux**: Latest version with optimized hooks integration
+- **Styled-Components**: Latest version for CSS-in-JS styling
+- **React Router**: Latest version for modern routing with data loading
+- **Build Tool**: Vite for fast development and optimized production builds
+- **Development**: Docker container with volume mounting and HMR
+
+### Development Environment Configuration
+- **Docker Compose**: Multi-service orchestration with PostgreSQL, Redis, and Adminer
+- **Docker Watch**: Live reloading for both frontend (Vite HMR) and backend (Air)
+- **Volume Mounting**: Source code mounted for development, dependencies cached
+- **Environment Variables**: Centralized configuration for API URLs and database connections
+- **Port Mapping**: Frontend (5173), Backend (3000), Database (5432), Redis (6379), Adminer (8080)
+
 ### TypeScript Interfaces
 
 ```typescript
