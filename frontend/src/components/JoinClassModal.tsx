@@ -139,6 +139,7 @@ const ModalTitle = styled.h2`
 
 const ClassInfoSection = styled.div`
   padding: 0 ${props => props.theme.spacing.lg};
+  margin-bottom: ${props => props.theme.spacing.sm};
 `;
 
 const InfoRowHorizontal = styled.div`
@@ -240,5 +241,6 @@ const VersionInfo = styled.div`
   color: ${props => props.theme.colors.gray[400]};
   border-top: 1px solid ${props => props.theme.colors.gray[200]};
 `;
+
 
 export default JoinClassModal;
