@@ -270,7 +270,7 @@ const PointsContainer = styled.div`
   position: relative;
 `;
 
-const PointsBadge = styled.div<{ $points: number; $isGuest: boolean }>`
+const PointsBadge = styled.div<{ $isGuest: boolean }>`
   display: flex;
   align-items: center;
   justify-content: center;
