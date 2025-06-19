@@ -7,34 +7,42 @@ This document outlines the high-level system architecture for the ClassSwift Tea
 ## Technical Architecture
 
 ### Technology Stack
+- **Frontend Framework**: React 19.1.0 with TypeScript
 - **Frontend Build Tool**: Vite for fast development and optimized builds
-- **Frontend Framework**: React 18+ with TypeScript
 - **Frontend Styling**: Styled-Components for component-based styling
 - **Frontend State Management**: Redux Toolkit for predictable state management
+- **Frontend Routing**: React Router DOM for client-side routing
 - **Backend API**: Go with Gin framework for high-performance REST API
-- **Icons**: Lucide React icon library
-- **Development**: Hot Module Replacement (HMR) via Vite
+- **Database**: PostgreSQL 15 for data persistence
+- **Cache**: Redis for session storage and WebSocket state management
+- **Development Environment**: Docker Compose with Docker Watch
+- **Type Safety**: TypeScript with strict type checking
+- **Development**: Vite HMR + Go Air live reload in containers
 
 ### Redux State Management
-- **Store Configuration**: Redux Toolkit for simplified state management
+- **Store Configuration**: Redux Toolkit 2.2.5 for simplified state management
+- **React Integration**: React-Redux 9.1.2 with hooks API
 - **Slice Structure**: 
   - `classSlice`: Class information and student data
   - `uiSlice`: Modal states, active tabs, loading states
   - `studentSlice`: Student points and group management
-- **Middleware**: Redux Thunk for async operations
+  - `websocketSlice`: Real-time connection state management
+- **Middleware**: Redux Thunk for async operations (built into RTK)
 - **DevTools**: Redux DevTools integration for debugging
 
 ### Styled-Components Architecture
 - **Theme Provider**: Centralized theme management with colors, fonts, and spacing
 - **Component Styling**: Isolated component styles with props-based theming
 - **Responsive Design**: Styled-components with media queries
+- **TypeScript Integration**: Full type safety with TypeScript definitions
 - **Animation**: CSS-in-JS animations and transitions
 
 ### Vite Configuration
-- **Development**: Fast HMR and instant server start
-- **Build Optimization**: Tree-shaking and code splitting
-- **TypeScript**: Native TypeScript support
-- **Asset Handling**: Optimized asset processing and bundling
+- **Development**: Lightning-fast HMR and instant server start
+- **Build Optimization**: Rollup-based production builds with tree shaking
+- **TypeScript**: Native TypeScript support with fast compilation
+- **Asset Handling**: Optimized asset processing and static imports
+- **ESLint Integration**: Modern ESLint configuration with TypeScript rules
 
 ### Go Gin API Backend
 - **Framework**: Go Gin for high-performance HTTP server
@@ -148,10 +156,12 @@ src/
 ## Performance Considerations
 
 ### Frontend Optimization
-- Code splitting with Vite
-- Component memoization for expensive operations
-- Redux state normalization
-- Lazy loading for route components
+- Code splitting with Vite and React Router dynamic imports
+- Component memoization for expensive operations (React 19.1 optimizations)
+- Redux Toolkit state normalization and RTK Query integration
+- Lazy loading for route components with React.lazy and Suspense
+- React 19.1 automatic batching and concurrent features
+- Vite's fast build times and tree shaking for optimal bundles
 
 ### Backend Optimization
 - Go Gin's high-performance HTTP handling
@@ -161,14 +171,25 @@ src/
 
 ## Deployment Architecture
 
-### Development Environment
-- Vite dev server for frontend hot reloading
-- Go application with live reload
-- Local PostgreSQL database
-- Environment-specific configuration
+### Development Environment (Docker Compose)
+- **Container Orchestration**: Docker Compose with Docker Watch for live reloading
+- **Frontend Container**: Vite dev server with HMR, volume-mounted source code
+- **Backend Container**: Go with Air live reload, auto-restart on file changes
+- **Database Container**: PostgreSQL 15 with persistent volumes
+- **Cache Container**: Redis for session storage and WebSocket state
+- **Development Tools**: Adminer for database administration
+- **Networking**: Internal Docker network with exposed ports for external access
+
+### Docker Watch Configuration
+- **Frontend**: Sync `src/` changes for instant HMR, rebuild on `package.json` changes
+- **Backend**: Sync all Go files with Air live reload, ignore temporary files
+- **Hot Reloading**: Both frontend and backend automatically restart on code changes
+- **Volume Mounting**: Source code mounted for development, node_modules cached
 
 ### Production Environment
-- **Frontend**: Static build deployment (Vercel/Netlify)
-- **Backend**: Go binary deployment (Docker containers)
+- **Frontend**: Static build deployment with Nginx (containerized)
+- **Backend**: Go binary deployment (multi-stage Docker build)
 - **Database**: Managed PostgreSQL (AWS RDS/Google Cloud SQL)
+- **Cache**: Managed Redis (AWS ElastiCache/Redis Cloud)
 - **CDN**: Static asset delivery optimization
+- **Container Orchestration**: Kubernetes or Docker Swarm for production scaling

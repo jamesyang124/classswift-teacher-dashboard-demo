@@ -14,13 +14,13 @@ Complete product requirements document outlining:
 ### [SYSTEM_ARCHITECTURE.md](SYSTEM_ARCHITECTURE.md)
 High-level system design covering:
 - Component hierarchy and data flow
-- Technology stack (React, Redux Toolkit, Go Gin, WebSockets)
+- Technology stack (React 19.1.0, Vite, Redux Toolkit, Go Gin, WebSockets)
 - Database design and API architecture
 - Integration patterns and scalability considerations
 
 ### [TECHNICAL_DESIGN.md](TECHNICAL_DESIGN.md)
 Detailed technical specifications including:
-- Complete TypeScript interfaces and Redux store structure
+- Complete TypeScript 5.4.5 interfaces and Redux store structure
 - Go Gin API endpoints with request/response examples
 - Database schema and models
 - Styled-components theme configuration
