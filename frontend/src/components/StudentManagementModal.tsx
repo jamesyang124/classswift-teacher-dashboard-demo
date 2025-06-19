@@ -89,6 +89,7 @@ const StudentManagementModal: React.FC = () => {
               <PointsButton 
                 $type="decrease" 
                 $disabled={student.isGuest || student.points <= 0}
+                disabled={student.isGuest || student.points <= 0}
                 onClick={() => !student.isGuest && student.points > 0 && updateStudentPoints(student.id, -1)}
               >
                 - 1
