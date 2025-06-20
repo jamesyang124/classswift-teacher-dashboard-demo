@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import styled from 'styled-components';
 import { MdContentCopy } from 'react-icons/md';
+import { FaChevronLeft } from "react-icons/fa6";
 
 interface JoinClassModalProps {}
 
@@ -27,11 +28,12 @@ const JoinClassModal: React.FC<JoinClassModalProps> = () => {
 
   return (
     <ModalContent>
+      <CloseButton>×</CloseButton>
+      
       <ModalHeader>
         <BackButton>
-          ← Back to Class List
+          <FaChevronLeft style={{ fontSize: '12px', marginRight: '4px' }} /> Back to Class List
         </BackButton>
-        <CloseButton>×</CloseButton>
       </ModalHeader>
 
         <ModalTitle>Join {mockClassData.className}</ModalTitle>
@@ -75,7 +77,7 @@ const JoinClassModal: React.FC<JoinClassModalProps> = () => {
 
 
 const ModalContent = styled.div`
-  background: ${props => props.theme.colors.white};
+  background: #F3F4F6;
   border-radius: ${props => props.theme.borderRadius.lg};
   width: 100%;
   max-width: 400px;
@@ -84,43 +86,61 @@ const ModalContent = styled.div`
   flex-direction: column;
   box-shadow: ${props => props.theme.shadows.xl};
   position: relative;
-  border: 2px solid #4338CA;
+  border: 2px solid #D97706;
 `;
 
 const ModalHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   padding: ${props => props.theme.spacing.lg};
-  border-bottom: 1px solid ${props => props.theme.colors.gray[200]};
+  padding-bottom: 0;
 `;
 
 const BackButton = styled.button`
   background: none;
   border: none;
+  outline: none;
   color: ${props => props.theme.colors.gray[600]};
-  font-size: ${props => props.theme.typography.sizes.button};
+  font-size: 12px;
   cursor: pointer;
   transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+
+  &:focus {
+    outline: none;
+    border: none;
+  }
 
   &:hover {
     color: ${props => props.theme.colors.primary};
   }
+  
+  padding: 0;
+  padding-bottom: 5px;
 `;
 
 const CloseButton = styled.button`
   background: none;
   border: none;
-  font-size: 24px;
+  outline: none;
+  font-size: 20px;
   color: ${props => props.theme.colors.gray[400]};
   cursor: pointer;
-  width: 32px;
-  height: 32px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: ${props => props.theme.borderRadius.sm};
   transition: all 0.2s ease;
+  position: absolute;
+  top: 8px;
+  right: 0px;
+  z-index: 10;
+
+  &:focus {
+    outline: none;
+    border: none;
+  }
 
   &:hover {
     background: ${props => props.theme.colors.gray[100]};
@@ -135,6 +155,8 @@ const ModalTitle = styled.h2`
   text-align: left;
   padding: ${props => props.theme.spacing.lg};
   margin: 0;
+  padding-top: 0;
+  padding-bottom: 10px;
 `;
 
 const ClassInfoSection = styled.div`
@@ -175,7 +197,7 @@ const InfoLabel = styled.div`
 
 
 const CopyButton = styled.button<{ $copied: boolean }>`
-  background: ${props => props.$copied ? props.theme.colors.success : props.theme.colors.primary};
+  background: ${props => props.$copied ? props.theme.colors.success : '#3B82F6'};
   color: ${props => props.theme.colors.white};
   border: none;
   border-radius: ${props => props.theme.borderRadius.sm};
@@ -194,7 +216,7 @@ const CopyButton = styled.button<{ $copied: boolean }>`
   outline: none;
 
   &:hover {
-    background: ${props => props.$copied ? props.theme.colors.success : '#2563EB'};
+    background: ${props => props.$copied ? props.theme.colors.success : '#0891B2'};
     transform: translateY(-1px);
   }
 
@@ -209,17 +231,16 @@ const CopyButton = styled.button<{ $copied: boolean }>`
 `;
 
 const QRCodeSection = styled.div`
-  padding: 0% 0%;
+  padding: 0 calc(${props => props.theme.spacing.lg} + 2%);
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
-  aspect-ratio: 1;
 `;
 
 const QRCodeContainer = styled.div`
   width: 100%;
-  height: 100%;
+  aspect-ratio: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -227,8 +248,8 @@ const QRCodeContainer = styled.div`
 `;
 
 const QRCodeImage = styled.img`
-  width: 85%;
-  height: 100%;
+  width: 90%;
+  height: 90%;
   display: block;
   object-fit: contain;
 `;
@@ -239,7 +260,6 @@ const VersionInfo = styled.div`
   padding: ${props => props.theme.spacing.md};
   font-size: ${props => props.theme.typography.sizes.caption};
   color: ${props => props.theme.colors.gray[400]};
-  border-top: 1px solid ${props => props.theme.colors.gray[200]};
 `;
 
 
