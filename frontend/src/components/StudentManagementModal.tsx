@@ -32,11 +32,22 @@ const initialStudents: Student[] = [
   { id: 18, name: 'Calvin', points: 2, isGuest: false },
   { id: 19, name: 'Guest', points: 0, isGuest: true },
   { id: 20, name: 'Joe', points: 0, isGuest: false },
+  { id: 21, name: 'Guest', points: 0, isGuest: true },
+  { id: 22, name: 'Guest', points: 0, isGuest: false },
+  { id: 23, name: 'Guest', points: 0, isGuest: false },
+  { id: 24, name: 'Guest', points: 0, isGuest: false },
+  { id: 25, name: 'Guest', points: 0, isGuest: false },
+  { id: 26, name: 'Guest', points: 0, isGuest: false },
+  { id: 27, name: 'Guest', points: 0, isGuest: false },
+  { id: 28, name: 'Guest', points: 0, isGuest: false },
+  { id: 29, name: 'Guest', points: 0, isGuest: false },
+  { id: 30, name: 'Guest', points: 0, isGuest: true },
 ];
 
 const StudentManagementModal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'student' | 'group'>('student');
   const [students, setStudents] = useState<Student[]>(initialStudents);
+  const maxCapacity = initialStudents.length;
 
   const formatSeatNumber = (id: number) => {
     return id.toString().padStart(2, '0');
@@ -154,7 +165,7 @@ const StudentManagementModal: React.FC = () => {
       <ModalHeader>
         <ClassInfo>
           <ClassName>302 Science</ClassName>
-          <StudentCount>👥 16/30</StudentCount>
+          <StudentCount>👥 {students.filter(s => !s.isGuest).length}/{maxCapacity}</StudentCount>
         </ClassInfo>
         <HeaderActions>
           <CloseButton>×</CloseButton>
@@ -318,11 +329,37 @@ const StudentGrid = styled.div`
   grid-template-columns: repeat(5, 1fr);
   gap: ${props => props.theme.spacing.sm};
   padding: ${props => props.theme.spacing.lg};
-  padding-top: 20px;
+  padding-top: 21px;
+  padding-bottom: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+
+  /* Custom scrollbar styling */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
 
   @media (max-width: ${props => props.theme.breakpoints.mobile}) {
     grid-template-columns: repeat(3, 1fr);
   }
+  
+  background-color: white;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
 `;
 
 const StudentCard = styled.div<{ $isGuest: boolean }>`
@@ -331,7 +368,7 @@ const StudentCard = styled.div<{ $isGuest: boolean }>`
   background: ${props => props.theme.colors.white};
   overflow: hidden;
   transition: all 0.2s ease;
-  min-height: 120px;
+  height: 87px;
   display: flex;
   flex-direction: column;
 
@@ -348,16 +385,20 @@ const SeatHeader = styled.div<{ $isGuest: boolean }>`
   font-weight: ${props => props.theme.typography.weights.bold};
   font-size: ${props => props.theme.typography.sizes.button};
   text-align: center;
-  padding: ${props => props.theme.spacing.sm};
+  padding: 4px ${props => props.theme.spacing.sm};
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const StudentName = styled.div<{ $isGuest: boolean }>`
-  padding: ${props => props.theme.spacing.md} ${props => props.theme.spacing.sm};
+  padding: 4px ${props => props.theme.spacing.sm};
   text-align: center;
   font-size: ${props => props.theme.typography.sizes.button};
   font-weight: ${props => props.theme.typography.weights.medium};
   color: ${props => props.$isGuest ? props.theme.colors.gray[400] : props.theme.colors.gray[800]};
-  min-height: 40px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -380,8 +421,8 @@ const PointsContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: ${props => props.theme.spacing.xs};
-  padding: ${props => props.theme.spacing.sm};
+  gap: 9px;
+  padding: 2px;
   position: relative;
 `;
 
@@ -446,10 +487,41 @@ const PointsButton = styled.button<{ $type: 'increase' | 'decrease'; $disabled?:
 
 const GroupContainer = styled.div`
   padding: ${props => props.theme.spacing.lg};
+  padding: 24px;
   padding-top: 0px;
+  
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 26px;
+  max-height: 400px;
+  overflow-y: auto;
+
+  /* Custom scrollbar styling */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+
+  @media (max-width: ${props => props.theme.breakpoints.mobile}) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  background-color: white;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
 `;
 
 const GroupSection = styled.div`
@@ -459,10 +531,12 @@ const GroupSection = styled.div`
 `;
 
 const GroupTitle = styled.h3`
-  font-size: ${props => props.theme.typography.sizes.h3};
+  font-size: 14px;
   font-weight: ${props => props.theme.typography.weights.bold};
   color: ${props => props.theme.colors.gray[900]};
   margin: 0;
+  margin-bottom: -5px;
+  text-align: end;
 `;
 
 const GroupStudents = styled.div`
