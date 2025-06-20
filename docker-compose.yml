@@ -25,62 +25,61 @@ services:
         - action: rebuild
           path: ./frontend/node_modules
 
-  # Backend - Go Gin API (commented out for frontend-first development)
-  # backend:
-  #   build:
-  #     context: ./backend
-  #     dockerfile: Dockerfile.dev
-  #   ports:
-  #     - "3000:3000"
-  #   volumes:
-  #     - ./backend:/app
-  #   environment:
-  #     - PORT=3000
-  #     - DATABASE_URL=postgres://classswift:password@db:5432/classswift_dev?sslmode=disable
-  #     - REDIS_URL=redis://redis:6379
-  #     - JWT_SECRET=your-development-jwt-secret
-  #     - CORS_ORIGINS=http://localhost:5173
-  #   depends_on:
-  #     - db
-  #     - redis
-  #   develop:
-  #     watch:
-  #       - action: sync
-  #         path: ./backend
-  #         target: /app
-  #         ignore:
-  #           - ./backend/tmp/
+  # Backend - Go Gin API with Docker Compose watch mode
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DATABASE_URL=postgres://classswift:password@db:5432/classswift_dev?sslmode=disable
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-development-jwt-secret
+      - CORS_ORIGINS=http://localhost:5173
+    depends_on:
+      - db
+      - redis
+    develop:
+      watch:
+        - action: sync
+          path: ./backend
+          target: /app
+          ignore:
+            - ./backend/tmp/
+            - ./backend/bin/
 
-  # PostgreSQL Database (commented out for frontend-first development)
-  # db:
-  #   image: postgres:15-alpine
-  #   ports:
-  #     - "5432:5432"
-  #   environment:
-  #     - POSTGRES_DB=classswift_dev
-  #     - POSTGRES_USER=classswift
-  #     - POSTGRES_PASSWORD=password
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #     - ./backend/migrations:/docker-entrypoint-initdb.d
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U classswift -d classswift_dev"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=classswift_dev
+      - POSTGRES_USER=classswift
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U classswift -d classswift_dev"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # Redis for Session Storage and WebSocket State (commented out for frontend-first development)
-  # redis:
-  #   image: redis:7-alpine
-  #   ports:
-  #     - "6379:6379"
-  #   volumes:
-  #     - redis_data:/data
-  #   healthcheck:
-  #     test: ["CMD", "redis-cli", "ping"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
+  # Redis for Session Storage and WebSocket State
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Adminer for Database Administration (commented out for frontend-first development)
   # adminer:
@@ -94,9 +93,9 @@ services:
   #   profiles:
   #     - dev-tools
 
-# volumes:
-  # postgres_data:
-  # redis_data:
+volumes:
+  postgres_data:
+  redis_data:
 
 networks:
   default:

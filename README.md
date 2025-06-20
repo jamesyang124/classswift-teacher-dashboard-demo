@@ -65,7 +65,6 @@ docker-compose up --watch   # Direct Docker Compose command
 
 ### Backend
 - **Go 1.21** with Gin framework for high-performance API
-- **Air** for live reload in development
 - **WebSocket Server** for real-time synchronization
 - **PostgreSQL 15** database for data persistence
 - **Redis** for session storage and WebSocket state
@@ -182,7 +181,7 @@ npm run dev
 # Backend (requires Go 1.21+)
 cd backend
 go mod download
-air
+go run .
 ```
 
 ### Documentation
