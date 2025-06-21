@@ -25,8 +25,8 @@ This document outlines the high-level system architecture for the ClassSwift Tea
 - **Slice Structure**: 
   - `classSlice`: Class information and student data
   - `uiSlice`: Modal states, active tabs, loading states
-  - `studentSlice`: Student points and group management
-  - `websocketSlice`: Real-time connection state management
+  - `studentSlice`: Student points, seat assignments, and group management
+  - `websocketSlice`: Real-time connection state and seat assignment messaging
 - **Middleware**: Redux Thunk for async operations (built into RTK)
 - **DevTools**: Redux DevTools integration for debugging
 
@@ -55,11 +55,12 @@ This document outlines the high-level system architecture for the ClassSwift Tea
 - **WebSocket Support**: Real-time communication via Gorilla WebSocket
 
 ### API Integration
-- **Data Fetching**: Implement fetch API for real-time data retrieval
-- **Error Handling**: Comprehensive error management with user feedback
-- **Loading States**: Visual indicators during data operations
-- **Mock API**: Simulate realistic API responses for development
-- **WebSocket Integration**: Real-time bidirectional communication for live updates
+- **Seat Authentication API**: Endpoints for seat-based student authentication
+- **Session Token Management**: JWT-based tokens with seat ID, student ID, and expiration
+- **Error Handling**: Comprehensive error management with seat conflict resolution
+- **Loading States**: Visual indicators during authentication and seat assignment
+- **WebSocket Integration**: Real-time seat assignment broadcasts and connection management
+- **Local Storage**: Session token persistence for browser refresh handling
 - **Connection Management**: Automatic reconnection and error handling for WebSocket connections
 
 ## System Components
@@ -67,21 +68,26 @@ This document outlines the high-level system architecture for the ClassSwift Tea
 ```
 System Architecture
 ├── Frontend (React)
-│   ├── Components
-│   ├── Redux Store
-│   ├── WebSocket Service
+│   ├── Components (Seat-based UI)
+│   ├── Redux Store (Seat assignments)
+│   ├── WebSocket Service (Seat messaging)
+│   ├── Local Storage (Session tokens)
 │   └── Styled Components
 ├── Backend (Go Gin)
-│   ├── REST API
-│   ├── WebSocket Hub
+│   ├── Seat Authentication API
+│   ├── Session Token Management
+│   ├── WebSocket Hub (Seat assignments)
 │   ├── JWT Middleware
 │   └── Database ORM
 ├── Database (PostgreSQL)
 │   ├── Classes
-│   ├── Students
+│   ├── Students (with seat assignments)
+│   ├── Seats (capacity management)
+│   ├── Session Tokens
 │   └── Groups
 └── External Services
-    └── QR Code API
+    ├── QR Code API (Seat-specific)
+    └── Authentication Service
 ```
 
 ## Frontend Architecture
@@ -101,8 +107,10 @@ src/
 ├── store/               # Redux store configuration
 ├── services/            # API service layers
 │   ├── api.ts          # REST API functions
-│   ├── websocket.ts    # WebSocket service
-│   └── storage.ts      # Local storage utilities
+│   ├── seatAuth.ts     # Seat authentication service
+│   ├── websocket.ts    # WebSocket service (seat messaging)
+│   ├── storage.ts      # Local storage utilities (session tokens)
+│   └── tokenManager.ts # Session token management
 ├── utils/               # Utility functions
 ├── utils/               # Utility functions
 └── types/               # TypeScript type definitions
@@ -120,7 +128,9 @@ src/
 ├── services/           # Business logic layer
 │   ├── classService.go    # Class management logic
 │   ├── studentService.go  # Student operations
-│   └── websocketHub.go    # WebSocket connection management
+│   ├── seatService.go     # Seat assignment and authentication
+│   ├── tokenService.go    # Session token generation and validation
+│   └── websocketHub.go    # WebSocket connection and seat messaging
 ├── utils/              # Helper functions
 ├── utils/              # Helper functions
 └── config/             # Environment configuration
@@ -129,29 +139,36 @@ src/
 ## Database Design
 
 ### Core Entities
-- **Classes** (classroom organization)
-- **Students** (student profiles and points)
-- **Groups** (auto-generated 5-student groups)
-- **Sessions** (authentication sessions)
-- **WebSocket Connections** (real-time communication tracking)
+- **Classes** (classroom organization with capacity)
+- **Students** (student profiles with seat assignments and points)
+- **Seats** (physical seat management - ID 1 to capacity)
+- **Session Tokens** (seat-based authentication tokens)
+- **Groups** (auto-generated 5-student groups excluding guests)
+- **WebSocket Connections** (real-time seat assignment communication)
 
 ### Key Relationships
-- Classes → Students (one-to-many)
-- Students ↔ Groups (many-to-many)
-- Classes → QR Codes (one-to-one generation)
-- Classes ↔ WebSocket Connections (one-to-many for real-time updates)
+- Classes → Seats (one-to-many, based on classroom capacity)
+- Seats → Students (one-to-one per session, with session tokens)
+- Students ↔ Groups (many-to-many, enrolled students only)
+- Classes → Session Tokens (one-to-many, seat-specific)
+- Seats → QR Codes (one-to-one, seat-specific generation)
+- Classes ↔ WebSocket Connections (one-to-many for seat assignment updates)
 
 ## Security Architecture
 
 ### Authentication & Authorization
-- JWT-based authentication with Go Fiber middleware
-- Session management for teacher access
-- QR code-based class joining for students
+- **Teacher Authentication**: JWT-based authentication with Go Gin middleware
+- **Student Authentication**: Seat-based QR code authentication with session tokens
+- **Session Token Management**: JWT tokens containing studentId, classId, seatId, timestamp, expiration
+- **Seat Assignment Security**: One seat per student per session enforcement
+- **Token Validation**: Server-side validation with seat conflict prevention
 
 ### Data Protection
-- Input validation and sanitization
+- Input validation and sanitization for seat authentication
 - SQL injection prevention (GORM ORM)
 - CORS protection for API endpoints
+- Session token encryption and secure storage
+- Seat assignment conflict prevention and validation
 
 ## Performance Considerations
 

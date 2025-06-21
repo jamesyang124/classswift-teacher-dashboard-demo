@@ -32,7 +32,7 @@ The following assumptions underlie all scenarios:
 
 ### Group Management
 12. **Group Formation Logic**: Uneven student divisions create additional groups (e.g., 23 students = 4 groups of 5 + 1 group of 3)
-13. **Group Naming**: Sequential UI text starting from Group1, Group2, Group3, etc.
+13. **Group Naming**: Sequential UI text starting from Group 1, Group 2, Group 3, etc.
 14. **Group Management**: No undo functionality - teachers manually drag students between groups one at a time
 15. **Single Student Operations**: Cross-group bulk operations not allowed due to tablet compatibility requirements
 16. **Session Reset**: Fresh session option in menu requires students to re-scan seat QR codes then classroom QR code

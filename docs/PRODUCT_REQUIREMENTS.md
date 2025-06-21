@@ -43,34 +43,56 @@ Empower educators with intuitive tools to manage classroom dynamics, track stude
 #### 1.2 Class Management System (Right Modal)
 
 ##### 1.2.1 Student List Management
-- **Grid Layout**: 5-column responsive grid displaying all students
+- **Grid Layout**: 5-column responsive grid displaying all students with seat-based arrangement
 - **Student Cards**: Individual cards showing:
-  - Seat number (01, 02, 03...) based on grid position
-  - Student name (or "Guest" for unassigned seats)
-  - Negative points (red indicators)
-  - Positive points (green indicators)
-  - Guest status differentiation
+  - **Seat ID** (1 to classroom capacity) as primary identifier
+  - Student name (for enrolled students) or "Guest" (for non-enrolled/empty seats)
+  - Blue header background for enrolled students
+  - Gray header background for guest seats
+  - Negative points (red badges)
+  - Positive points (green badges)
+  - Point management controls (+/- buttons)
+- **Seat-based Authentication**:
+  - Students scan QR codes at specific physical seats
+  - Each seat has unique ID (1 to capacity) and can only be occupied by one student
+  - Seat assignments are locked for entire class session
+  - One seat per enrolled student policy enforced
 - **Real-time Updates**:
-  - When students join via QR code, they appear immediately in assigned seats
+  - When students complete seat-based authentication, they appear immediately
   - Student information automatically populates without manual refresh
   - Multiple students can join simultaneously without conflicts
   - Live connection maintains current class state
 
 ##### 1.2.2 Point Management System
 - **Point Types**:
-  - Positive Points: Green indicators with + / - controls
-  - Negative Points: Red indicators with + / - controls
-- **Interactive Controls**: Click-based increment/decrement for each student
-- **Real-time Updates**: Immediate visual feedback when points change
-- **Minimum Values**: Points cannot go below zero
-- **Session-based**: Points reset on page refresh (no persistence)
+  - Positive Points: Green badges with + / - controls
+  - Negative Points: Red badges with + / - controls
+  - Zero Points: Gray badges when student has no points
+- **Interactive Controls**: 
+  - Click-based increment/decrement for each student
+  - Minus button disabled when student has 0 points
+  - Point changes apply immediately with visual feedback
+- **Point Constraints**:
+  - Minimum value of 0 points enforced
+  - No upper limit on positive points
+  - Color-coded badges for easy visual identification
+- **Session Persistence**: Points maintained during class session but reset on browser refresh
 
 ##### 1.2.3 Group Management
-- **Auto-grouping**: Automatic creation of 5-student groups
-- **Group Display**: Visual separation and organization of student groups
-- **Group Numbering**: Sequential group identification (Group 1, Group 2, etc.)
-- **Guest Exclusion**: Guests excluded from automatic group formation
-- **Dynamic Updates**: Groups reorganize when student data changes
+- **Auto-grouping**: 
+  - Automatic creation of 5-student groups from enrolled students only
+  - Uneven divisions create additional smaller groups (e.g., 23 students = 4 groups of 5 + 1 group of 3)
+  - Guest seats grouped separately after enrolled student groups formed
+- **Group Display**: 
+  - Visual separation and organization of student groups
+  - Same UI elements as student list (blue cards for enrolled, gray for guests)
+  - Point badges visible in group view
+- **Group Management**:
+  - Sequential group naming (Group 1, Group 2, Group 3, etc.)
+  - Manual drag-and-drop between groups for adjustments
+  - Single student operations only (no bulk cross-group operations)
+  - Local client-side storage only (no database persistence)
+- **Guest Integration**: Guest seats can be manually dragged to different groups as needed
 
 ##### 1.2.4 Interface Controls
 - **Tab Navigation**: 
@@ -79,10 +101,12 @@ Empower educators with intuitive tools to manage classroom dynamics, track stude
   - Active State: Clear visual indication of selected tab
   - Smooth Transitions: Seamless switching between views
 - **Menu System**:
-  - Trigger: Three-dot menu button (...)
-  - Dropdown Options: Export Data, Class Settings, Reset Points, Delete Class
+  - Trigger: Three-dot menu button (...) in top-right corner
+  - Dropdown Options: 
+    - Reset Points: Clear all student points to zero
+    - Fresh Session: Reset entire session (requires students to re-scan seat QR codes then classroom QR code)
   - Positioning: Right-aligned dropdown
-  - Click Outside: Close menu when clicking elsewhere
+  - Interaction: Click outside menu area closes dropdown without action
 - **Modal Controls**:
   - Close Functionality: X button to close modals
   - Reset Behavior: Closing resets entire interface
@@ -146,10 +170,16 @@ Empower educators with intuitive tools to manage classroom dynamics, track stude
 ### 4. Service Requirements
 
 #### 4.1 Real-time Data Synchronization
-- **Live Updates**: Student information updates instantly across teacher dashboard when students join
-- **Multi-device Support**: Changes reflect immediately across all connected teacher devices
-- **Conflict Resolution**: Handle multiple simultaneous student joins without data conflicts
-- **Connection Reliability**: Maintain stable data connection with automatic reconnection
+- **Seat-based Authentication**: 
+  - QR code scanning initiates authentication process verifying student enrollment
+  - Session tokens include: Student ID, Class ID, Seat ID, timestamp, expiration time
+  - One seat per student enforcement with locked assignments
+- **Live Updates**: Student information updates instantly when seat authentication completes
+- **Session Management**: 
+  - Client device retains session info on browser refresh (local storage)
+  - No database persistence for session state
+  - Fresh session option requires complete re-authentication
+- **Conflict Resolution**: Handle multiple simultaneous seat authentications without conflicts
 
 #### 4.2 Data Management
 - **Session Persistence**: Student seat assignments persist throughout class session

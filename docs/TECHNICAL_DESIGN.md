@@ -29,21 +29,26 @@ This document contains the technical specifications and design patterns for the 
 interface Student {
   id: number;
   name: string;
+  seatId: number; // Seat ID (1 to classroom capacity)
   negativePoints: number;
   positivePoints: number;
   isGuest: boolean;
+  sessionToken?: string; // For seat-based authentication
+  joinedAt: string;
 }
 
 interface ClassData {
   classId: string;
   className: string;
   studentCount: number;
-  maxStudents: number;
+  maxStudents: number; // Classroom capacity
   students: Student[];
+  guestSeats: number; // Number of guest/empty seats
   qrCodeUrl: string;
   joinLink: string;
   createdAt: string;
   isActive: boolean;
+  sessionId: string; // For session management
 }
 
 interface Group {
@@ -51,9 +56,18 @@ interface Group {
   students: Student[];
 }
 
-interface WebSocketMessage {
-  type: 'STUDENT_JOINED' | 'STUDENT_LEFT' | 'POINTS_UPDATED' | 'CLASS_UPDATED';
+interface SessionToken {
+  studentId: number;
   classId: string;
+  seatId: number;
+  joinedAt: string;
+  expiresAt: string;
+}
+
+interface WebSocketMessage {
+  type: 'STUDENT_JOINED' | 'STUDENT_LEFT' | 'POINTS_UPDATED' | 'CLASS_UPDATED' | 'SEAT_ASSIGNED';
+  classId: string;
+  seatId?: number;
   data: any;
   timestamp: string;
 }
@@ -87,6 +101,8 @@ interface StudentsState {
   students: Student[];
   groups: Group[];
   pointsHistory: PointsAction[];
+  seatAssignments: { [seatId: number]: Student | null }; // Seat-based mapping
+  guestSeats: number[]; // Array of guest seat IDs
 }
 
 interface WebSocketState {
@@ -112,10 +128,13 @@ const studentSlice = createSlice({
   initialState,
   reducers: {
     updateStudentPoints: (state, action) => { /* ... */ },
-    createGroups: (state, action) => { /* ... */ },
-    resetStudentData: (state) => { /* ... */ },
-    addStudent: (state, action) => { /* ... */ },
-    removeStudent: (state, action) => { /* ... */ }
+    createGroups: (state, action) => { /* Auto-group enrolled students, then guest seats */ },
+    resetStudentData: (state) => { /* Reset to guest seats only */ },
+    assignStudentToSeat: (state, action) => { /* Seat-based assignment */ },
+    removeStudentFromSeat: (state, action) => { /* Convert to guest seat */ },
+    updateSeatAssignments: (state, action) => { /* Update seat mapping */ },
+    resetPointsToZero: (state) => { /* Menu system bulk operation */ },
+    freshSessionReset: (state) => { /* Complete session reset */ }
   }
 });
 
@@ -127,6 +146,8 @@ const websocketSlice = createSlice({
     connectionLost: (state) => { state.connected = false; state.reconnecting = true; },
     connectionError: (state, action) => { state.error = action.payload; state.connected = false; },
     messageReceived: (state, action) => { state.lastMessage = action.payload; },
+    seatAssigned: (state, action) => { /* Handle seat assignment events */ },
+    seatReleased: (state, action) => { /* Handle seat release events */ },
     clearError: (state) => { state.error = null; }
   }
 });
@@ -163,6 +184,27 @@ const StyledStudentCard = styled.div<{ isGuest: boolean }>`
   background: ${props => props.isGuest ? props.theme.colors.neutral : props.theme.colors.primary};
   padding: ${props => props.theme.spacing.md};
   border-radius: 8px;
+  position: relative;
+  
+  .seat-id {
+    position: absolute;
+    top: 4px;
+    left: 8px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+  }
+  
+  .point-controls {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+    
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
   
   @media (max-width: ${props => props.theme.breakpoints.mobile}) {
     padding: ${props => props.theme.spacing.sm};
@@ -170,31 +212,40 @@ const StyledStudentCard = styled.div<{ isGuest: boolean }>`
 `;
 ```
 
-### QR Code Generation and Class Joining Flow
+### Seat-based Authentication and Class Joining Flow
 
-The QR code generation follows this specific flow:
+The seat-based authentication follows this specific flow:
 
-1. **QR Code Generation**: 
-   - Frontend requests QR code via `GET /api/v1/classes/:classId/qr`
-   - Backend generates QR code containing URL: `http://localhost:3000/api/v1/classes/:classId/join`
-   - QR code is displayed in the left modal for students to scan
+1. **Seat QR Code Generation**: 
+   - Each physical seat has a unique QR code containing seat-specific URL
+   - QR codes include both seat ID and class ID: `http://localhost:3000/api/v1/classes/:classId/seats/:seatId/join`
+   - Frontend displays classroom QR code in left modal for class ID sharing
 
-2. **Student QR Code Scanning**:
-   - Student scans QR code with mobile device
-   - Mobile app/browser makes `GET /api/v1/classes/:classId/join` with token in Authorization header
-   - Backend validates token, extracts student ID, and adds student to class
-   - Backend broadcasts student join event via WebSocket to update teacher dashboard
-   - Backend redirects student to `https://www.classswift.viewsonic.io`
+2. **Seat-based Student Authentication**:
+   - Student scans seat-specific QR code with mobile device
+   - Mobile app/browser makes `POST /api/v1/classes/:classId/seats/:seatId/join` with student credentials
+   - Backend validates student enrollment and seat availability
+   - Backend generates session token containing: studentId, classId, seatId, timestamp, expiration
+   - Backend assigns seat exclusively to authenticated student for entire session
+   - Backend broadcasts seat assignment event via WebSocket to teacher dashboard
 
-3. **Token Authentication**:
-   - Token must be provided in `Authorization` header (supports `Bearer` prefix)
-   - Token contains student identity and is validated server-side
-   - Invalid tokens return 401 Unauthorized
+3. **Session Token Management**:
+   - Session tokens stored in client local storage for browser refresh persistence
+   - Tokens include expiration time and are validated server-side
+   - One seat per student policy enforced - prevents duplicate assignments
+   - Invalid tokens or seat conflicts return 401 Unauthorized
 
-4. **Real-time Updates**:
-   - Successfully joined students trigger WebSocket broadcast
-   - Teacher dashboard receives immediate updates via WebSocket connection
-   - Student appears in right modal grid automatically
+4. **Seat Assignment Rules**:
+   - Each seat (ID 1 to capacity) can only be occupied by one student per session
+   - Seat assignments are locked for entire class session
+   - Guest seats appear as gray cards (empty or non-enrolled students)
+   - Enrolled students appear as blue cards with seat ID display
+
+5. **Real-time Updates**:
+   - Successfully authenticated students trigger WebSocket broadcast with seat assignment
+   - Teacher dashboard receives immediate seat-specific updates
+   - Student appears in specific seat position in right modal grid
+   - Guest seats can be manually managed by teacher through drag-and-drop
 
 ### Backend Data Models
 

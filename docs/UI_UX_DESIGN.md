@@ -37,18 +37,28 @@ The interface consists of two primary modal panels operating independently:
 - **Modal Backdrop**: Semi-transparent overlay
 
 ### Student Card Design
-- **Active Students**: Blue header background (#3B82F6)
-- **Guest Students**: Gray header background (#9CA3AF)
+- **Enrolled Students**: Blue header background (#3B82F6) for authenticated students
+- **Guest Seats**: Gray header background (#9CA3AF) for empty/non-enrolled seats
 - **Card Structure**:
-  - Seat number in header (01, 02, 03...)
-  - Student name in center
+  - **Seat ID** prominently displayed in header (1, 2, 3... up to classroom capacity)
+  - Student name in center (or "Guest" for unassigned seats)
   - Point indicators at bottom (red/green badges with +/- controls)
+  - Point management controls disabled for guest seats
+- **Seat ID Display**: 
+  - Primary identifier for each seat position
+  - Clearly visible in top-left corner of each card
+  - Consistent formatting across all seats
+  - Helps teachers identify specific physical seats
 
 ### Point System Visual Design
 - **Negative Points**: Red circular badges with white numbers
 - **Positive Points**: Green circular badges with white numbers
-- **Point Controls**: Small +/- buttons adjacent to point displays
+- **Point Controls**: 
+  - Small +/- buttons adjacent to point displays
+  - Minus button disabled when student has 0 points (visual indication)
+  - Controls disabled for guest seats
 - **Zero State**: Gray badges for students with no points
+- **Guest Seats**: Point controls and badges remain gray and non-interactive
 
 ### Typography
 - **Header Text**: Bold, 18px for modal titles
@@ -68,10 +78,18 @@ The interface consists of two primary modal panels operating independently:
 
 ### Interactive Elements
 - **Copy Buttons**: Blue background with white text and copy icon
-- **Point Controls**: Small clickable +/- buttons
+- **Point Controls**: 
+  - Small clickable +/- buttons for enrolled students
+  - Disabled state styling for guest seats
+  - Minus button disabled when points = 0
 - **Tab Navigation**: Clear active/inactive states
 - **Close Buttons**: Standard X icon in corners
-- **Three-dot Menu**: Dropdown trigger in top-right
+- **Three-dot Menu**:
+  - Dropdown trigger (⋮) in top-right corner
+  - Right-aligned dropdown with:
+    - "Reset Points" - Clear all student points to zero
+    - "Fresh Session" - Complete session reset
+  - Click outside to close without action
 
 ### Responsive Behavior
 - **Desktop**: Dual modal layout as shown
@@ -86,17 +104,21 @@ The interface consists of two primary modal panels operating independently:
 
 ## User Experience Guidelines
 
-### Student Joining Flow
-1. Teacher displays left modal with QR code
-2. Students scan QR code with mobile devices
-3. Students appear immediately in right modal grid
-4. Real-time updates without page refresh
+### Seat-based Student Joining Flow
+1. Teacher displays left modal with classroom QR code for class identification
+2. Students scan seat-specific QR codes at their physical seats
+3. Students complete seat-based authentication process  
+4. Enrolled students appear immediately in specific seat positions in right modal grid
+5. Seat cards transform from gray "Guest" to blue with student name
+6. Real-time updates without page refresh
 
 ### Point Management Flow
 1. Teacher opens right modal
-2. Locates student in grid layout
-3. Uses +/- controls to adjust points
-4. Immediate visual feedback with color-coded badges
+2. Locates student by seat ID in grid layout
+3. Uses +/- controls to adjust points (enrolled students only)
+4. Minus button becomes disabled when student reaches 0 points
+5. Immediate visual feedback with color-coded badges
+6. Guest seats remain non-interactive with gray styling
 
 ### Navigation Patterns
 - **Modal Independence**: Both modals operate simultaneously
