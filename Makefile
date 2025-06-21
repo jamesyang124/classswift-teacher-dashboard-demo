@@ -1,12 +1,12 @@
 # ClassSwift Teacher Dashboard - Development Makefile
 
-.PHONY: help dev up down logs clean backend-only frontend-only
+.PHONY: help dev up down logs clean backend-only frontend-only status be-integration-test be-unit-test be-e2e-test 
 
 # Default target
 help: ## Show available commands
 	@echo "ClassSwift Teacher Dashboard - Available Commands:"
 	@echo ""
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-15s %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
 
 # Core Commands
@@ -49,3 +49,18 @@ frontend-only: ## Start only frontend service
 status: ## Show service status
 	@echo "📊 ClassSwift service status:"
 	docker-compose ps
+
+be-unit-test: ## Run all Go unit tests in the backend (excluding integration/e2e tests)
+	cd ./backend && go test -count=1 ./internal/... ./config/... ./pkg/... ./api/... ./cmd/...
+
+be-integration-test: ## Run integration tests with test DB
+	docker-compose -f ./backend/tests/docker/docker-compose.test.yml up -d
+	sleep 3
+	cd ./backend && go test -count=1 ./tests/integration/...
+	docker-compose -f ./backend/tests/docker/docker-compose.test.yml down
+
+be-e2e-test: ## Run e2e tests with test server
+	docker-compose -f ./backend/tests/docker/docker-compose.test.yml up -d
+	sleep 3
+	cd ./backend && go test -count=1 ./tests/e2e/...
+	docker-compose -f ./backend/tests/docker/docker-compose.test.yml down

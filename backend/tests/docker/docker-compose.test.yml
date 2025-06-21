@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  test-db:
+    image: postgres:15-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_DB=classswift_test
+      - POSTGRES_USER=classswift
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - test_postgres_data:/var/lib/postgresql/data
+      - ../data/seed.sql:/docker-entrypoint-initdb.d/seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U classswift -d classswift_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  test-backend:
+    build:
+      context: ../../
+      dockerfile: Dockerfile
+    environment:
+      - HOST=localhost
+      - PORT=8081
+      - DATABASE_URL=postgres://classswift:password@test-db:5432/classswift_test?sslmode=disable
+      - CORS_ORIGINS=http://localhost:3000
+    ports:
+      - "8081:8081"
+    depends_on:
+      test-db:
+        condition: service_healthy
+    networks:
+      - default
+
+volumes:
+  test_postgres_data:

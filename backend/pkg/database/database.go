@@ -1,11 +1,10 @@
 package database
 
 import (
-	"os"
-	"sync"
-
+	"classswift-backend/config"
 	"classswift-backend/internal/model"
 	"classswift-backend/pkg/logger"
+	"sync"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -19,12 +18,9 @@ var (
 
 // Init initializes the database connection and runs migrations
 func Init() (*gorm.DB, error) {
-	dsn := os.Getenv("DATABASE_URL")
-	if dsn == "" {
-		dsn = "host=localhost user=postgres password=postgres dbname=classswift port=5432 sslmode=disable"
-	}
+	url := config.DatabaseURL()
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+	db, err := gorm.Open(postgres.Open(url), &gorm.Config{
 		Logger: gormlogger.Default.LogMode(gormlogger.Info),
 	})
 	if err != nil {

@@ -54,7 +54,7 @@ func Init() {
 
 		cfg = &Config{
 			Port:                    port,
-			DatabaseURL:             getEnv("DATABASE_URL", "host=localhost user=postgres password=postgres dbname=classswift port=5432 sslmode=disable"),
+			DatabaseURL:             getEnv("DATABASE_URL", ""),
 			GinMode:                 getEnv("GIN_MODE", "release"),
 			Host:                    host,
 			TLSMode:                 tlsMode,
@@ -110,4 +110,12 @@ func Port() string {
 		panic("config.Init() must be called before config.Port()")
 	}
 	return cfg.Port
+}
+
+// DatabaseURL returns the database connection string from the config/env only.
+func DatabaseURL() string {
+	if cfg == nil {
+		panic("config.Init() must be called before config.DatabaseURL()")
+	}
+	return cfg.DatabaseURL
 }
