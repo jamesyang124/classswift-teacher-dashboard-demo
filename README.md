@@ -96,14 +96,20 @@ This project follows a documentation-first approach with comprehensive specifica
 ```
 classswift-teacher-dashboard-demo/
 ├── docs/                           # Comprehensive documentation
+│   ├── README.md                    # Documentation navigation guide
 │   ├── PRODUCT_REQUIREMENTS.md     # Complete feature specifications
 │   ├── SYSTEM_ARCHITECTURE.md      # High-level system design
 │   ├── TECHNICAL_DESIGN.md         # Implementation details & code examples
 │   ├── UI_UX_DESIGN.md            # Visual design specs based on wireframe
 │   ├── USER_STORIES.md            # User workflows & acceptance criteria
+│   ├── USER_SCENARIOS.md          # Detailed user interaction scenarios
 │   ├── TESTING_STRATEGY.md        # QA approach for frontend/backend
 │   ├── DEVELOPMENT_SPRINT_PLANNING.md # 4-day implementation timeline
-│   └── WIRE_FRAME.png             # Visual interface mockup
+│   ├── WIRE_FRAME.png             # Visual interface mockup
+│   └── spikes/                    # Development spikes and prototypes
+│       ├── SPIKES_20250620.md     # Development spike documentation
+│       ├── SCREENSHOT_20250620_1.png # UI prototype screenshots
+│       └── SCREENSHOT_20250620_2.png # UI prototype screenshots
 ├── .llm/                          # AI development guidelines
 │   └── code_review_prompt.md      # Documentation alignment requirements
 ├── frontend/                      # React TypeScript application
@@ -194,9 +200,12 @@ go run .
 | [Technical Design](docs/TECHNICAL_DESIGN.md) | Implementation details & code examples | Developers |
 | [UI/UX Design](docs/UI_UX_DESIGN.md) | Visual specifications & wireframe analysis | Designers, developers |
 | [User Stories](docs/USER_STORIES.md) | User workflows & acceptance criteria | Product managers, QA |
+| [User Scenarios](docs/USER_SCENARIOS.md) | Detailed user interaction scenarios | Product managers, UX |
 | [Testing Strategy](docs/TESTING_STRATEGY.md) | QA approach & testing methods | QA engineers, developers |
 | [Sprint Planning](docs/DEVELOPMENT_SPRINT_PLANNING.md) | 4-day development timeline | Project managers |
+| [Development Spikes](docs/spikes/SPIKES_20250620.md) | Development spikes and prototypes | Developers |
 | [Wireframe](docs/WIRE_FRAME.png) | Visual interface mockup | Designers, developers |
+| [UI Screenshots](docs/spikes/) | UI prototype screenshots | Designers, developers |
 
 ## Contributing
 

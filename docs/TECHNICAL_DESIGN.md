@@ -206,49 +206,40 @@ import (
     "time"
 )
 
-// Core Models
+// Core Models - Updated for simplified 2-table schema
 type Student struct {
-    ID                uint   `json:"id" gorm:"primaryKey"`
-    Name              string `json:"name"`
-    StudentExternalID string `json:"studentExternalId" gorm:"uniqueIndex"`
-    CreatedAt         time.Time `json:"createdAt"`
-    UpdatedAt         time.Time `json:"updatedAt"`
+    ID         uint      `json:"id" gorm:"primaryKey"`
+    Name       string    `json:"name" gorm:"not null"`
+    ClassID    *string   `json:"classId" gorm:"index"` // Nullable foreign key
+    SeatNumber *int      `json:"seatNumber"` // NULL = not seated, value = seated
+    CreatedAt  time.Time `json:"createdAt"`
+    UpdatedAt  time.Time `json:"updatedAt"`
 }
 
 type Class struct {
-    ID            string    `json:"id" gorm:"primaryKey"`
-    PublicID      string    `json:"publicId" gorm:"uniqueIndex;not null"`
-    Name          string    `json:"name"`
-    StudentCount  int       `json:"studentCount"`
-    TotalCapacity int       `json:"totalCapacity"`
-    IsActive      bool      `json:"isActive"`
-    CreatedAt     time.Time `json:"createdAt"`
-    UpdatedAt     time.Time `json:"updatedAt"`
-    ClassStudents []ClassStudent `json:"classStudents" gorm:"foreignKey:ClassID"`
+    ID           string    `json:"id" gorm:"primaryKey"`
+    PublicID     string    `json:"publicId" gorm:"uniqueIndex;not null"`
+    Name         string    `json:"name" gorm:"not null"`
+    StudentCount int       `json:"studentCount" gorm:"default:0"`
+    TotalCapacity int      `json:"totalCapacity" gorm:"default:30"`
+    IsActive     bool      `json:"isActive" gorm:"default:true"`
+    CreatedAt    time.Time `json:"createdAt"`
+    UpdatedAt    time.Time `json:"updatedAt"`
 }
 
-type ClassStudent struct {
-    StudentID      uint      `json:"studentId" gorm:"primaryKey"`
-    ClassID        string    `json:"classId" gorm:"primaryKey"`
-    NegativePoints int       `json:"negativePoints"`
-    PositivePoints int       `json:"positivePoints"`
-    IsGuest        bool      `json:"isGuest"`
-    SeatNumber     string    `json:"seatNumber"`
-    EnrolledAt     time.Time `json:"enrolledAt"`
-    UpdatedAt      time.Time `json:"updatedAt"`
-    Student        Student   `json:"student" gorm:"foreignKey:StudentID"`
-    Class          Class     `json:"class" gorm:"foreignKey:ClassID"`
+// Response-only struct for API responses with computed fields
+type ClassResponse struct {
+    Class
+    JoinLink string `json:"joinLink"` // Computed by backend
 }
 
-type Group struct {
-    ID           uint           `json:"id" gorm:"primaryKey"`
-    ClassID      string         `json:"classId"`
-    Name         string         `json:"name"`
-    CreatedAt    time.Time      `json:"createdAt"`
-    UpdatedAt    time.Time      `json:"updatedAt"`
-    ClassStudents []ClassStudent `json:"classStudents" gorm:"many2many:group_students;jointable_foreignkey:student_id;association_jointable_foreignkey:class_id"`
+// API Response Models
+type APIResponse struct {
+    Success bool        `json:"success"`
+    Data    interface{} `json:"data,omitempty"`
+    Message string      `json:"message,omitempty"`
+    Errors  []string    `json:"errors,omitempty"`
 }
-
 
 // WebSocket Models
 type WebSocketMessage struct {
@@ -259,302 +250,255 @@ type WebSocketMessage struct {
 }
 ```
 
+### API Routes & Request/Response Definitions
+
+```
+// API Endpoints
+GET    /api/v1/classes/:classId          - Get class information with students
+GET    /api/v1/classes/:classId/students - Get students in class
+GET    /api/v1/classes/:classId/qr       - Get QR code and join link
+GET    /api/v1/classes/:classId/join     - QR code join endpoint (redirects)
+```
+
+**API Request/Response Examples:**
+
+```json
+// GET /api/v1/classes/X58E9647
+// Response:
+{
+  "success": true,
+  "data": {
+    "id": "class-1",
+    "publicId": "X58E9647",
+    "name": "302 Science",
+    "studentCount": 4,
+    "totalCapacity": 30,
+    "isActive": true,
+    "joinLink": "http://localhost:3000/api/v1/classes/X58E9647/join",
+    "createdAt": "2025-06-21T10:15:00Z",
+    "updatedAt": "2025-06-21T10:15:00Z"
+  }
+}
+
+// GET /api/v1/classes/X58E9647/students
+// Response:
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "Philip",
+      "classId": "class-1",
+      "seatNumber": 1,
+      "createdAt": "2025-06-21T10:15:00Z",
+      "updatedAt": "2025-06-21T10:15:00Z"
+    },
+    {
+      "id": 4,
+      "name": "Alice",
+      "classId": "class-1",
+      "seatNumber": null,
+      "createdAt": "2025-06-21T10:20:00Z",
+      "updatedAt": "2025-06-21T10:20:00Z"
+    },
+    {
+      "id": 5,
+      "name": "Guest",
+      "classId": "class-1",
+      "seatNumber": 4,
+      "createdAt": "2025-06-21T10:25:00Z",
+      "updatedAt": "2025-06-21T10:25:00Z"
+    }
+  ]
+}
+
+// GET /api/v1/classes/X58E9647/qr
+// Response:
+{
+  "success": true,
+  "data": {
+    "qrCodeBase64": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
+    "joinLink": "http://localhost:3000/api/v1/classes/X58E9647/join",
+    "classId": "X58E9647"
+  }
+}
+
+// Note: joinLink is dynamically composed by backend as:
+// BASE_URL + "/api/v1/classes/" + publicId + "/join"
+
+// GET /api/v1/classes/X58E9647/join (QR scan endpoint)
+// Headers: X-Student-Name: "Alice" (optional, defaults to "Guest")
+// Response: 302 Redirect to https://www.classswift.viewsonic.io
+```
+
 ### Database Schema Design
 
 ```sql
 -- PostgreSQL Database Schema for ClassSwift Teacher Dashboard
+-- Simplified schema based on client-side group management
 
 -- Classes Table: Core classroom entities
 CREATE TABLE classes (
     id VARCHAR(255) PRIMARY KEY,                    -- Internal unique class identifier
-    public_id VARCHAR(255) UNIQUE NOT NULL,        -- Public class identifier for QR codes/external use (e.g., "X58E9647")
+    public_id VARCHAR(255) UNIQUE NOT NULL,        -- Public class identifier for QR codes (e.g., "X58E9647")
     name VARCHAR(255) NOT NULL,                     -- Human-readable class name (e.g., "302 Science")
     student_count INTEGER DEFAULT 0,               -- Current number of active students
     total_capacity INTEGER DEFAULT 30,             -- Maximum students allowed in class
-    is_active BOOLEAN DEFAULT TRUE,                -- Whether class is currently active
+    is_active BOOLEAN DEFAULT TRUE,                -- Whether class is currently accepting students
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT chk_capacity_positive CHECK (total_capacity > 0),
+    CONSTRAINT chk_student_count_valid CHECK (student_count >= 0 AND student_count <= total_capacity)
 );
 
--- Students Table: Master student records (independent of classes)
+-- Students Table: Student records with current class assignment
 CREATE TABLE students (
     id SERIAL PRIMARY KEY,                         -- Auto-incrementing student ID
-    first_name VARCHAR(255) NOT NULL,              -- Student first name
-    last_name VARCHAR(255),                        -- Student last name (optional)
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Class Students Table: Junction table for student-class enrollment with points
-CREATE TABLE class_students (
-    student_id INTEGER NOT NULL,                   -- Foreign key to students
-    class_id VARCHAR(255) NOT NULL,               -- Foreign key to classes
-    negative_points INTEGER DEFAULT 0 CHECK (negative_points >= 0), -- Red badge points for this class
-    positive_points INTEGER DEFAULT 0 CHECK (positive_points >= 0), -- Green badge points for this class
-    is_guest BOOLEAN DEFAULT FALSE,               -- Guest users vs enrolled students
-    seat_number VARCHAR(10),                      -- Physical seat assignment (optional)
-    enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    PRIMARY KEY (student_id, class_id),           -- Compound primary key ensures one enrollment per student per class
-    CONSTRAINT fk_class_students_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
-    CONSTRAINT fk_class_students_class FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
-);
-
--- Groups Table: 5-student group formations
-CREATE TABLE groups (
-    id SERIAL PRIMARY KEY,
-    class_id VARCHAR(255) NOT NULL,               -- Foreign key to classes
-    name VARCHAR(100) NOT NULL,                   -- Group name (e.g., "Group 1", "Team Alpha")
+    name VARCHAR(255) NOT NULL,                    -- Full student name
+    class_id VARCHAR(255),                         -- Current class (nullable)
+    seat_number INTEGER,                          -- Physical seat number (NULL = not seated)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    CONSTRAINT fk_groups_class FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
+    CONSTRAINT chk_name_not_empty CHECK (LENGTH(TRIM(name)) > 0),
+    CONSTRAINT fk_students_class FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE SET NULL,
+    CONSTRAINT chk_seat_number_positive CHECK (seat_number IS NULL OR seat_number > 0)
 );
-
--- Group Students Junction Table: Many-to-many relationship
-CREATE TABLE group_students (
-    group_id INTEGER NOT NULL,
-    student_id INTEGER NOT NULL,                  -- Foreign key to students
-    class_id VARCHAR(255) NOT NULL,               -- Foreign key to classes (same as group's class)
-    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    PRIMARY KEY (group_id, student_id),
-    CONSTRAINT fk_group_students_group FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
-    CONSTRAINT fk_group_students_class_student FOREIGN KEY (student_id, class_id) REFERENCES class_students(student_id, class_id) ON DELETE CASCADE
-);
-
-
 
 -- Indexes for Performance Optimization
 CREATE INDEX idx_classes_public_id ON classes(public_id);
-CREATE INDEX idx_students_name ON students(first_name, last_name);
-CREATE INDEX idx_class_students_class_id ON class_students(class_id);
-CREATE INDEX idx_class_students_student_id ON class_students(student_id);
-CREATE INDEX idx_class_students_is_guest ON class_students(is_guest);
-CREATE INDEX idx_groups_class_id ON groups(class_id);
-CREATE INDEX idx_group_students_composite ON group_students(student_id, class_id);
+CREATE INDEX idx_students_class_id ON students(class_id);
 
 -- Views for Common Queries
 CREATE VIEW class_students_view AS
 SELECT 
     s.id as student_id,
-    s.first_name,
-    s.last_name,
-    CONCAT(s.first_name, COALESCE(' ' || s.last_name, '')) as full_name,
-    cs.class_id,
-    cs.positive_points,
-    cs.negative_points,
-    cs.is_guest,
-    cs.seat_number,
-    cs.enrolled_at,
-    cs.updated_at
+    s.name as student_name,
+    s.class_id,
+    c.name as class_name,
+    c.public_id,
+    s.seat_number,
+    s.created_at,
+    s.updated_at,
+    CASE WHEN s.seat_number IS NOT NULL THEN true ELSE false END as is_seated
 FROM students s
-JOIN class_students cs ON s.id = cs.student_id;
+LEFT JOIN classes c ON s.class_id = c.id;
 
 CREATE VIEW class_summary AS
 SELECT 
     c.*,
-    COUNT(DISTINCT cs.student_id) as current_student_count,
-    COUNT(DISTINCT CASE WHEN cs.is_guest = false THEN cs.student_id END) as enrolled_student_count,
-    COUNT(DISTINCT CASE WHEN cs.is_guest = true THEN cs.student_id END) as guest_student_count,
-    AVG(cs.positive_points) as avg_positive_points,
-    AVG(cs.negative_points) as avg_negative_points
+    COUNT(s.id) as total_students,
+    COUNT(CASE WHEN s.seat_number IS NOT NULL THEN s.id END) as seated_students,
+    COUNT(CASE WHEN s.seat_number IS NULL THEN s.id END) as unassigned_students
 FROM classes c
-LEFT JOIN class_students cs ON c.id = cs.class_id
+LEFT JOIN students s ON c.id = s.class_id
 GROUP BY c.id, c.public_id, c.name, c.student_count, c.total_capacity, c.is_active, c.created_at, c.updated_at;
 
 -- Triggers for Data Consistency
 CREATE OR REPLACE FUNCTION update_class_student_count()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF TG_OP = 'INSERT' THEN
-        UPDATE classes 
-        SET student_count = student_count + 1, updated_at = CURRENT_TIMESTAMP 
-        WHERE id = NEW.class_id;
-        RETURN NEW;
-    ELSIF TG_OP = 'DELETE' THEN
+    -- Update old class count (when student leaves)
+    IF TG_OP = 'UPDATE' AND OLD.class_id IS NOT NULL AND OLD.class_id != NEW.class_id THEN
         UPDATE classes 
         SET student_count = student_count - 1, updated_at = CURRENT_TIMESTAMP 
         WHERE id = OLD.class_id;
-        RETURN OLD;
+    ELSIF TG_OP = 'DELETE' AND OLD.class_id IS NOT NULL THEN
+        UPDATE classes 
+        SET student_count = student_count - 1, updated_at = CURRENT_TIMESTAMP 
+        WHERE id = OLD.class_id;
     END IF;
-    RETURN NULL;
+    
+    -- Update new class count (when student joins)
+    IF TG_OP = 'UPDATE' AND NEW.class_id IS NOT NULL AND OLD.class_id != NEW.class_id THEN
+        UPDATE classes 
+        SET student_count = student_count + 1, updated_at = CURRENT_TIMESTAMP 
+        WHERE id = NEW.class_id;
+    ELSIF TG_OP = 'INSERT' AND NEW.class_id IS NOT NULL THEN
+        UPDATE classes 
+        SET student_count = student_count + 1, updated_at = CURRENT_TIMESTAMP 
+        WHERE id = NEW.class_id;
+    END IF;
+    
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trigger_class_student_count_insert
-    AFTER INSERT ON class_students
+CREATE TRIGGER trigger_student_class_count
+    AFTER INSERT OR UPDATE OR DELETE ON students
     FOR EACH ROW
     EXECUTE FUNCTION update_class_student_count();
 
-CREATE TRIGGER trigger_class_student_count_delete
-    AFTER DELETE ON class_students
-    FOR EACH ROW
-    EXECUTE FUNCTION update_class_student_count();
-
--- Function to automatically create groups (5 students each, excluding guests)
-CREATE OR REPLACE FUNCTION auto_create_groups(class_id_param VARCHAR(255))
-RETURNS INTEGER AS $$
-DECLARE
-    student_count INTEGER;
-    group_count INTEGER;
-    group_id INTEGER;
-    class_student_rec RECORD;
-    current_group_size INTEGER := 0;
+-- Update timestamp trigger
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
 BEGIN
-    -- Count non-guest students in this class
-    SELECT COUNT(*) INTO student_count 
-    FROM class_students 
-    WHERE class_id = class_id_param AND is_guest = false;
-    
-    -- Delete existing groups for this class
-    DELETE FROM groups WHERE class_id = class_id_param;
-    
-    -- Calculate number of groups needed
-    group_count := CEIL(student_count / 5.0);
-    
-    -- Create groups
-    FOR i IN 1..group_count LOOP
-        INSERT INTO groups (class_id, name) 
-        VALUES (class_id_param, 'Group ' || i)
-        RETURNING id INTO group_id;
-        
-        -- Assign class students to this group
-        current_group_size := 0;
-        FOR class_student_rec IN 
-            SELECT student_id FROM class_students 
-            WHERE class_id = class_id_param AND is_guest = false
-            AND student_id NOT IN (SELECT student_id FROM group_students WHERE class_id = class_id_param)
-            LIMIT 5
-        LOOP
-            INSERT INTO group_students (group_id, student_id, class_id) 
-            VALUES (group_id, class_student_rec.student_id, class_id_param);
-            current_group_size := current_group_size + 1;
-        END LOOP;
-    END LOOP;
-    
-    RETURN group_count;
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_students_updated_at
+    BEFORE UPDATE ON students
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Sample Data for Development
+INSERT INTO classes (id, public_id, name, total_capacity) VALUES 
+('class-1', 'X58E9647', '302 Science', 30);
+
+INSERT INTO students (name, class_id, seat_number) VALUES 
+('Philip', 'class-1', 1),
+('Darrell', 'class-1', 2),
+('Cody', 'class-1', 3),
+('Alice', 'class-1', NULL), -- Student in class but not seated
+('Guest', 'class-1', 4);
 ```
 
-### Frontend API Integration
+### Frontend TypeScript Interfaces
 
 ```typescript
-// WebSocket Service Implementation
-class WebSocketService {
-  private ws: WebSocket | null = null;
-  private classId: string;
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  private reconnectInterval = 3000;
+// Updated TypeScript Interfaces for simplified schema
 
-  constructor(classId: string) {
-    this.classId = classId;
-  }
-
-  connect(dispatch: AppDispatch): void {
-    const wsUrl = `ws://localhost:3000/ws/classes/${this.classId}`;
-    this.ws = new WebSocket(wsUrl);
-
-    this.ws.onopen = () => {
-      console.log('WebSocket connected');
-      dispatch(websocketSlice.actions.connectionEstablished());
-      this.reconnectAttempts = 0;
-    };
-
-    this.ws.onmessage = (event) => {
-      const message: WebSocketMessage = JSON.parse(event.data);
-      dispatch(websocketSlice.actions.messageReceived(message));
-      
-      // Handle different message types
-      switch (message.type) {
-        case 'STUDENT_JOINED':
-          dispatch(studentSlice.actions.addStudent(message.data));
-          break;
-        case 'STUDENT_LEFT':
-          dispatch(studentSlice.actions.removeStudent(message.data));
-          break;
-        case 'POINTS_UPDATED':
-          dispatch(studentSlice.actions.updateStudentPoints(message.data));
-          break;
-      }
-    };
-
-    this.ws.onclose = () => {
-      dispatch(websocketSlice.actions.connectionLost());
-      this.handleReconnect(dispatch);
-    };
-
-    this.ws.onerror = (error) => {
-      dispatch(websocketSlice.actions.connectionError(error.toString()));
-    };
-  }
-
-  private handleReconnect(dispatch: AppDispatch): void {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      setTimeout(() => {
-        this.reconnectAttempts++;
-        this.connect(dispatch);
-      }, this.reconnectInterval);
-    }
-  }
-
-  disconnect(): void {
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
-    }
-  }
+interface APIResponse<T = any> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  errors?: string[];
 }
 
-// React Hook for WebSocket Connection
-const useWebSocket = (classId: string) => {
-  const dispatch = useAppDispatch();
-  const wsState = useAppSelector(state => state.websocket);
-  const wsServiceRef = useRef<WebSocketService | null>(null);
+interface Student {
+  id: number;
+  name: string;
+  classId?: string;
+  seatNumber?: number; // NULL = not seated, value = seated at that position
+  createdAt: string;
+  updatedAt: string;
+}
 
-  useEffect(() => {
-    if (classId) {
-      wsServiceRef.current = new WebSocketService(classId);
-      wsServiceRef.current.connect(dispatch);
-    }
+interface ClassData {
+  id: string;
+  publicId: string;
+  name: string;
+  studentCount: number;
+  totalCapacity: number;
+  isActive: boolean;
+  joinLink: string; // Computed by backend
+  createdAt: string;
+  updatedAt: string;
+}
 
-    return () => {
-      if (wsServiceRef.current) {
-        wsServiceRef.current.disconnect();
-      }
-    };
-  }, [classId, dispatch]);
-
-  return wsState;
-};
-
-// API Integration Functions
-const fetchClassData = async (classId: string): Promise<ClassData> => {
-  const response = await fetch(`/api/v1/classes/${classId}`);
-  if (!response.ok) throw new Error('Failed to fetch class data');
-  return response.json();
-};
-
-const fetchStudents = async (classId: string): Promise<Student[]> => {
-  const response = await fetch(`/api/v1/classes/${classId}/students`);
-  if (!response.ok) throw new Error('Failed to fetch students');
-  return response.json();
-};
-
-const updateStudentPoints = async (
-  studentId: number, 
-  pointsUpdate: { type: string; action: string }
-): Promise<void> => {
-  const response = await fetch(`/api/v1/students/${studentId}/points`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(pointsUpdate)
-  });
-  if (!response.ok) throw new Error('Failed to update points');
-};
+interface WebSocketMessage {
+  type: 'STUDENT_JOINED' | 'STUDENT_LEFT' | 'CLASS_UPDATED';
+  classId: string;
+  data: any;
+  timestamp: string;
+}
 ```
 
 ### Component Integration Example
