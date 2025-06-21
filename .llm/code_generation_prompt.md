@@ -14,9 +14,10 @@ Before generating any code, MUST review these files in order:
 2. **PRODUCT_REQUIREMENTS.md** - Core functionality and business logic
 3. **UI_UX_DESIGN.md** - Visual design, layout, and user interaction patterns
 4. **TECHNICAL_DESIGN.md** - Implementation details, interfaces, and architecture
-5. **SYSTEM_ARCHITECTURE.md** - High-level system design and component relationships
-6. **USER_STORIES.md** - User workflows and acceptance criteria
-7. **TESTING_STRATEGY.md** - Quality requirements and testing approach
+5. **USER_SCENARIOS.md** - **User workflows, system assumptions, and implementation scope**
+6. **SYSTEM_ARCHITECTURE.md** - High-level system design and component relationships
+7. **USER_STORIES.md** - User workflows and acceptance criteria
+8. **TESTING_STRATEGY.md** - Quality requirements and testing approach
 
 ## Code Generation Guidelines
 
@@ -41,6 +42,24 @@ Before generating any code, MUST review these files in order:
 
 ### Key Implementation Requirements
 
+#### Implementation Scope (from USER_SCENARIOS.md)
+**Included in Demo:**
+1. Starting a New Class Session (Left modal QR/Class ID display)
+2. Managing Student Points (Point system with +/- buttons, minimum 0)
+3. Joining Class as Registered Student (Blue cards with seat IDs)
+4. Late Joining Student (Active group rebalancing)
+5. Guest Seats in Classroom (Gray cards with seat IDs, all seats start as guests)
+6. Automatic Group Formation (Local client-side grouping, 5 students per group)
+7. Menu System Operations (Three-dot menu with bulk operations)
+
+**System Assumptions (from USER_SCENARIOS.md):**
+- Seats numbered 1 to capacity, all start as guest seats
+- Session persistence via local storage (no database persistence for groups/points)
+- Group naming: Group1, Group2, Group3, etc.
+- No undo functionality - single student drag operations only
+- Point system: minimum 0, disable minus button at 0 points
+- Seat ID as primary student identifier in UI
+
 #### Dual Modal System (Critical)
 - Left modal: QR code display, class joining functionality
 - Right modal: Student management, point tracking
@@ -49,21 +68,25 @@ Before generating any code, MUST review these files in order:
 #### Student Management Features
 - Real-time updates when students join via QR
 - Point system with color-coded badges (red negative, green positive)
-- 5-student group formation excluding guests
+- 5-student group formation with remainder handling
 - Blue cards for active students, gray for guests
+- Late joiner integration with automatic group rebalancing
 
 #### Data Flow Requirements
 - Redux store structure from TECHNICAL_DESIGN.md
 - API endpoints exactly as documented
-- WebSocket integration for real-time updates
+- WebSocket integration for real-time updates (if implemented)
+- Local storage for session persistence and group assignments
 
 ## Mandatory Checks Before Code Generation
 
 1. **Wireframe Alignment**: Does the code match WIRE_FRAME.png specifications?
-2. **Technical Consistency**: Are TypeScript interfaces and API contracts followed?
-3. **UI/UX Compliance**: Do colors, layout, and interactions match design specs?
-4. **Architecture Adherence**: Is the component structure as documented?
-5. **Testing Coverage**: Can the code be tested per TESTING_STRATEGY.md?
+2. **Scenario Scope**: Is the implementation within USER_SCENARIOS.md defined scope?
+3. **System Assumptions**: Do implementation details follow USER_SCENARIOS.md assumptions?
+4. **Technical Consistency**: Are TypeScript interfaces and API contracts followed?
+5. **UI/UX Compliance**: Do colors, layout, and interactions match design specs?
+6. **Architecture Adherence**: Is the component structure as documented?
+7. **Testing Coverage**: Can the code be tested per TESTING_STRATEGY.md?
 
 ## Code Quality Standards
 

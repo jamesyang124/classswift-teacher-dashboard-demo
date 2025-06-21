@@ -48,6 +48,13 @@ Comprehensive user stories covering:
 - Guest user limitations and system behaviors
 - Real-time synchronization and group formation
 
+### [USER_SCENARIOS.md](USER_SCENARIOS.md)
+Detailed user scenarios and system assumptions:
+- 7 main implementation scenarios (class session, points, joining, groups, menu)
+- System assumptions for authentication, seat management, and group formation
+- Implementation scope and demo boundaries
+- Potential missing elements analysis
+
 ## 🧪 Testing & Development
 
 ### [TESTING_STRATEGY.md](TESTING_STRATEGY.md)
@@ -72,6 +79,7 @@ Testing approach for frontend and backend:
 | [Technical](TECHNICAL_DESIGN.md) | Implementation | Code examples, APIs, database schema |
 | [UI/UX](UI_UX_DESIGN.md) | Visual Design | Colors, layouts, wireframe analysis |
 | [User Stories](USER_STORIES.md) | User Workflows | Teacher/student scenarios, acceptance criteria |
+| [User Scenarios](USER_SCENARIOS.md) | System Behavior | Implementation scope, assumptions, demo boundaries |
 | [Testing](TESTING_STRATEGY.md) | Quality Assurance | Testing approaches for frontend/backend |
 | [Sprint Plan](DEVELOPMENT_SPRINT_PLANNING.md) | Development | Timeline, deliverables, risk mitigation |
 
@@ -79,10 +87,11 @@ Testing approach for frontend and backend:
 
 ### For Developers
 1. Start with [PRODUCT_REQUIREMENTS.md](PRODUCT_REQUIREMENTS.md) to understand what to build
-2. Review [WIRE_FRAME.png](WIRE_FRAME.png) to see the visual interface
-3. Reference [TECHNICAL_DESIGN.md](TECHNICAL_DESIGN.md) for implementation details
-4. Follow [UI_UX_DESIGN.md](UI_UX_DESIGN.md) for styling and layout specifications
-5. Use [TESTING_STRATEGY.md](TESTING_STRATEGY.md) for quality assurance approach
+2. Review [USER_SCENARIOS.md](USER_SCENARIOS.md) for implementation scope and system assumptions
+3. Reference [WIRE_FRAME.png](WIRE_FRAME.png) to see the visual interface
+4. Use [TECHNICAL_DESIGN.md](TECHNICAL_DESIGN.md) for implementation details
+5. Follow [UI_UX_DESIGN.md](UI_UX_DESIGN.md) for styling and layout specifications
+6. Apply [TESTING_STRATEGY.md](TESTING_STRATEGY.md) for quality assurance approach
 
 ### For Project Management
 1. Review [USER_STORIES.md](USER_STORIES.md) for user workflows and acceptance criteria

@@ -170,285 +170,273 @@ const StyledStudentCard = styled.div<{ isGuest: boolean }>`
 `;
 ```
 
-### Go Gin API Endpoints
+### QR Code Generation and Class Joining Flow
+
+The QR code generation follows this specific flow:
+
+1. **QR Code Generation**: 
+   - Frontend requests QR code via `GET /api/v1/classes/:classId/qr`
+   - Backend generates QR code containing URL: `http://localhost:3000/api/v1/classes/:classId/join`
+   - QR code is displayed in the left modal for students to scan
+
+2. **Student QR Code Scanning**:
+   - Student scans QR code with mobile device
+   - Mobile app/browser makes `GET /api/v1/classes/:classId/join` with token in Authorization header
+   - Backend validates token, extracts student ID, and adds student to class
+   - Backend broadcasts student join event via WebSocket to update teacher dashboard
+   - Backend redirects student to `https://www.classswift.viewsonic.io`
+
+3. **Token Authentication**:
+   - Token must be provided in `Authorization` header (supports `Bearer` prefix)
+   - Token contains student identity and is validated server-side
+   - Invalid tokens return 401 Unauthorized
+
+4. **Real-time Updates**:
+   - Successfully joined students trigger WebSocket broadcast
+   - Teacher dashboard receives immediate updates via WebSocket connection
+   - Student appears in right modal grid automatically
+
+### Backend Data Models
 
 ```go
-// Go Gin API Structure
+// Go Backend Models/Types
 package main
 
 import (
-    "github.com/gin-gonic/gin"
-    "github.com/gin-contrib/cors"
-    "github.com/gorilla/websocket"
+    "time"
 )
 
-// Models
+// Core Models
 type Student struct {
-    ID             uint   `json:"id" gorm:"primaryKey"`
-    Name           string `json:"name"`
-    NegativePoints int    `json:"negativePoints"`
-    PositivePoints int    `json:"positivePoints"`
-    IsGuest        bool   `json:"isGuest"`
-    ClassID        string `json:"classId"`
+    ID                uint   `json:"id" gorm:"primaryKey"`
+    Name              string `json:"name"`
+    StudentExternalID string `json:"studentExternalId" gorm:"uniqueIndex"`
+    CreatedAt         time.Time `json:"createdAt"`
+    UpdatedAt         time.Time `json:"updatedAt"`
 }
 
 type Class struct {
     ID            string    `json:"id" gorm:"primaryKey"`
+    PublicID      string    `json:"publicId" gorm:"uniqueIndex;not null"`
     Name          string    `json:"name"`
     StudentCount  int       `json:"studentCount"`
     TotalCapacity int       `json:"totalCapacity"`
-    JoinLink      string    `json:"joinLink"`
-    QRCodeURL     string    `json:"qrCodeUrl"`
-    Students      []Student `json:"students" gorm:"foreignKey:ClassID"`
+    IsActive      bool      `json:"isActive"`
+    CreatedAt     time.Time `json:"createdAt"`
+    UpdatedAt     time.Time `json:"updatedAt"`
+    ClassStudents []ClassStudent `json:"classStudents" gorm:"foreignKey:ClassID"`
 }
 
+type ClassStudent struct {
+    StudentID      uint      `json:"studentId" gorm:"primaryKey"`
+    ClassID        string    `json:"classId" gorm:"primaryKey"`
+    NegativePoints int       `json:"negativePoints"`
+    PositivePoints int       `json:"positivePoints"`
+    IsGuest        bool      `json:"isGuest"`
+    SeatNumber     string    `json:"seatNumber"`
+    EnrolledAt     time.Time `json:"enrolledAt"`
+    UpdatedAt      time.Time `json:"updatedAt"`
+    Student        Student   `json:"student" gorm:"foreignKey:StudentID"`
+    Class          Class     `json:"class" gorm:"foreignKey:ClassID"`
+}
+
+type Group struct {
+    ID           uint           `json:"id" gorm:"primaryKey"`
+    ClassID      string         `json:"classId"`
+    Name         string         `json:"name"`
+    CreatedAt    time.Time      `json:"createdAt"`
+    UpdatedAt    time.Time      `json:"updatedAt"`
+    ClassStudents []ClassStudent `json:"classStudents" gorm:"many2many:group_students;jointable_foreignkey:student_id;association_jointable_foreignkey:class_id"`
+}
+
+
+// WebSocket Models
 type WebSocketMessage struct {
     Type      string      `json:"type"`
     ClassID   string      `json:"classId"`
     Data      interface{} `json:"data"`
     Timestamp time.Time   `json:"timestamp"`
 }
-
-type WebSocketHub struct {
-    clients    map[string]map[*websocket.Conn]bool // classId -> connections
-    register   chan *WebSocketClient
-    unregister chan *WebSocketClient
-    broadcast  chan WebSocketMessage
-    upgrader   websocket.Upgrader
-}
-
-type WebSocketClient struct {
-    conn    *websocket.Conn
-    classId string
-}
-
-// API Routes
-func setupRoutes(router *gin.Engine, hub *WebSocketHub) {
-    api := router.Group("/api/v1")
-    
-    // Class routes
-    api.GET("/classes/:classId", getClass)
-    api.POST("/classes", createClass)
-    api.PUT("/classes/:classId", updateClass)
-    api.DELETE("/classes/:classId", deleteClass)
-    
-    // Student routes
-    api.GET("/classes/:classId/students", getStudents)
-    api.POST("/classes/:classId/students", addStudent)
-    api.POST("/classes/:classId/join", func(c *gin.Context) {
-        handleStudentJoin(c, hub)
-    })
-    api.PUT("/students/:studentId/points", updateStudentPoints)
-    api.DELETE("/students/:studentId", removeStudent)
-    
-    // QR Code routes
-    api.GET("/classes/:classId/qr", generateQRCode)
-    
-    // WebSocket routes
-    router.GET("/ws/classes/:classId", func(c *gin.Context) {
-        handleWebSocketConnection(c, hub)
-    })
-    
-    // Group routes
-    api.GET("/classes/:classId/groups", getGroups)
-    api.POST("/classes/:classId/groups", createGroups)
-}
-
-// Handler Examples
-func getClass(c *gin.Context) {
-    classId := c.Param("classId")
-    
-    // Mocked Response for Development
-    c.JSON(200, gin.H{
-        "classId": classId,
-        "className": "302 Science",
-        "studentCount": 16,
-        "maxStudents": 30,
-        "joinLink": fmt.Sprintf("https://www.classswift.viewsonic.io/join/%s", classId),
-        "qrCodeUrl": fmt.Sprintf("https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://www.classswift.viewsonic.io/join/%s", classId),
-        "createdAt": "2025-06-20T09:00:00Z",
-        "isActive": true,
-        "students": []Student{
-            {ID: 1, Name: "Alice Johnson", PositivePoints: 5, NegativePoints: 2, IsGuest: false},
-            {ID: 2, Name: "Bob Smith", PositivePoints: 3, NegativePoints: 1, IsGuest: false},
-            {ID: 3, Name: "Charlie Brown", PositivePoints: 7, NegativePoints: 0, IsGuest: false},
-            {ID: 4, Name: "Diana Prince", PositivePoints: 4, NegativePoints: 3, IsGuest: false},
-            {ID: 5, Name: "Guest User", PositivePoints: 0, NegativePoints: 0, IsGuest: true},
-        },
-    })
-}
-
-func generateQRCode(c *gin.Context) {
-    classId := c.Param("classId")
-    joinUrl := fmt.Sprintf("https://www.classswift.viewsonic.io/join/%s", classId)
-    
-    // Generate QR code using external service (for development)
-    qrCodeUrl := fmt.Sprintf("https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=%s", 
-        url.QueryEscape(joinUrl))
-    
-    c.JSON(200, gin.H{
-        "classId": classId,
-        "joinUrl": joinUrl,
-        "qrCodeUrl": qrCodeUrl,
-        "size": "200x200",
-        "format": "png",
-    })
-}
-
-// WebSocket Hub Management
-func NewWebSocketHub() *WebSocketHub {
-    return &WebSocketHub{
-        clients:    make(map[string]map[*websocket.Conn]bool),
-        register:   make(chan *WebSocketClient),
-        unregister: make(chan *WebSocketClient),
-        broadcast:  make(chan WebSocketMessage),
-        upgrader: websocket.Upgrader{
-            CheckOrigin: func(r *http.Request) bool {
-                return true // Allow all origins in development
-            },
-        },
-    }
-}
-
-func (h *WebSocketHub) Run() {
-    for {
-        select {
-        case client := <-h.register:
-            if h.clients[client.classId] == nil {
-                h.clients[client.classId] = make(map[*websocket.Conn]bool)
-            }
-            h.clients[client.classId][client.conn] = true
-            
-        case client := <-h.unregister:
-            if clients, ok := h.clients[client.classId]; ok {
-                if _, ok := clients[client.conn]; ok {
-                    delete(clients, client.conn)
-                    client.conn.Close()
-                }
-            }
-            
-        case message := <-h.broadcast:
-            if clients, ok := h.clients[message.ClassID]; ok {
-                for conn := range clients {
-                    if err := conn.WriteJSON(message); err != nil {
-                        delete(clients, conn)
-                        conn.Close()
-                    }
-                }
-            }
-        }
-    }
-}
-
-func handleWebSocketConnection(c *gin.Context, hub *WebSocketHub) {
-    classId := c.Param("classId")
-    
-    conn, err := hub.upgrader.Upgrade(c.Writer, c.Request, nil)
-    if err != nil {
-        return
-    }
-    
-    client := &WebSocketClient{conn: conn, classId: classId}
-    hub.register <- client
-    
-    defer func() {
-        hub.unregister <- client
-    }()
-    
-    for {
-        var msg WebSocketMessage
-        if err := conn.ReadJSON(&msg); err != nil {
-            break
-        }
-        // Handle incoming messages if needed
-    }
-}
-
-func handleStudentJoin(c *gin.Context, hub *WebSocketHub) {
-    classId := c.Param("classId")
-    
-    // Parse student token and validate
-    type JoinRequest struct {
-        Token string `json:"token"`
-    }
-    
-    var req JoinRequest
-    if err := c.ShouldBindJSON(&req); err != nil {
-        c.JSON(400, gin.H{"error": "Invalid request"})
-        return
-    }
-    
-    // Validate token and get student info (mock implementation)
-    studentInfo := Student{
-        ID:   1,
-        Name: "John Doe",
-        // ... other fields
-    }
-    
-    // Broadcast student join event
-    message := WebSocketMessage{
-        Type:      "STUDENT_JOINED",
-        ClassID:   classId,
-        Data:      studentInfo,
-        Timestamp: time.Now(),
-    }
-    
-    hub.broadcast <- message
-    
-    c.JSON(200, gin.H{
-        "success":   true,
-        "student":   studentInfo,
-        "seatId":    "seat_01", // From enrollment data
-    })
-}
-
-func updateStudentPoints(c *gin.Context) {
-    studentId := c.Param("studentId")
-    
-    type PointsUpdate struct {
-        Type   string `json:"type"`   // "positive" or "negative"
-        Action string `json:"action"` // "add" or "subtract"
-    }
-    
-    var update PointsUpdate
-    if err := c.ShouldBindJSON(&update); err != nil {
-        c.JSON(400, gin.H{"error": "Invalid request body"})
-        return
-    }
-    
-    // Database update logic here
-    c.JSON(200, gin.H{"success": true})
-}
 ```
 
-### Database Schema
+### Database Schema Design
 
 ```sql
--- PostgreSQL Schema
+-- PostgreSQL Database Schema for ClassSwift Teacher Dashboard
+
+-- Classes Table: Core classroom entities
 CREATE TABLE classes (
-    id VARCHAR(255) PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    student_count INTEGER DEFAULT 0,
-    total_capacity INTEGER DEFAULT 30,
-    join_link TEXT,
-    qr_code_url TEXT,
+    id VARCHAR(255) PRIMARY KEY,                    -- Internal unique class identifier
+    public_id VARCHAR(255) UNIQUE NOT NULL,        -- Public class identifier for QR codes/external use (e.g., "X58E9647")
+    name VARCHAR(255) NOT NULL,                     -- Human-readable class name (e.g., "302 Science")
+    student_count INTEGER DEFAULT 0,               -- Current number of active students
+    total_capacity INTEGER DEFAULT 30,             -- Maximum students allowed in class
+    is_active BOOLEAN DEFAULT TRUE,                -- Whether class is currently active
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Students Table: Master student records (independent of classes)
 CREATE TABLE students (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    negative_points INTEGER DEFAULT 0,
-    positive_points INTEGER DEFAULT 0,
-    is_guest BOOLEAN DEFAULT FALSE,
-    class_id VARCHAR(255) REFERENCES classes(id) ON DELETE CASCADE,
+    id SERIAL PRIMARY KEY,                         -- Auto-incrementing student ID
+    first_name VARCHAR(255) NOT NULL,              -- Student first name
+    last_name VARCHAR(255),                        -- Student last name (optional)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_students_class_id ON students(class_id);
-CREATE INDEX idx_students_is_guest ON students(is_guest);
+-- Class Students Table: Junction table for student-class enrollment with points
+CREATE TABLE class_students (
+    student_id INTEGER NOT NULL,                   -- Foreign key to students
+    class_id VARCHAR(255) NOT NULL,               -- Foreign key to classes
+    negative_points INTEGER DEFAULT 0 CHECK (negative_points >= 0), -- Red badge points for this class
+    positive_points INTEGER DEFAULT 0 CHECK (positive_points >= 0), -- Green badge points for this class
+    is_guest BOOLEAN DEFAULT FALSE,               -- Guest users vs enrolled students
+    seat_number VARCHAR(10),                      -- Physical seat assignment (optional)
+    enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    PRIMARY KEY (student_id, class_id),           -- Compound primary key ensures one enrollment per student per class
+    CONSTRAINT fk_class_students_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+    CONSTRAINT fk_class_students_class FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
+);
+
+-- Groups Table: 5-student group formations
+CREATE TABLE groups (
+    id SERIAL PRIMARY KEY,
+    class_id VARCHAR(255) NOT NULL,               -- Foreign key to classes
+    name VARCHAR(100) NOT NULL,                   -- Group name (e.g., "Group 1", "Team Alpha")
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_groups_class FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE
+);
+
+-- Group Students Junction Table: Many-to-many relationship
+CREATE TABLE group_students (
+    group_id INTEGER NOT NULL,
+    student_id INTEGER NOT NULL,                  -- Foreign key to students
+    class_id VARCHAR(255) NOT NULL,               -- Foreign key to classes (same as group's class)
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    PRIMARY KEY (group_id, student_id),
+    CONSTRAINT fk_group_students_group FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+    CONSTRAINT fk_group_students_class_student FOREIGN KEY (student_id, class_id) REFERENCES class_students(student_id, class_id) ON DELETE CASCADE
+);
+
+
+
+-- Indexes for Performance Optimization
+CREATE INDEX idx_classes_public_id ON classes(public_id);
+CREATE INDEX idx_students_name ON students(first_name, last_name);
+CREATE INDEX idx_class_students_class_id ON class_students(class_id);
+CREATE INDEX idx_class_students_student_id ON class_students(student_id);
+CREATE INDEX idx_class_students_is_guest ON class_students(is_guest);
+CREATE INDEX idx_groups_class_id ON groups(class_id);
+CREATE INDEX idx_group_students_composite ON group_students(student_id, class_id);
+
+-- Views for Common Queries
+CREATE VIEW class_students_view AS
+SELECT 
+    s.id as student_id,
+    s.first_name,
+    s.last_name,
+    CONCAT(s.first_name, COALESCE(' ' || s.last_name, '')) as full_name,
+    cs.class_id,
+    cs.positive_points,
+    cs.negative_points,
+    cs.is_guest,
+    cs.seat_number,
+    cs.enrolled_at,
+    cs.updated_at
+FROM students s
+JOIN class_students cs ON s.id = cs.student_id;
+
+CREATE VIEW class_summary AS
+SELECT 
+    c.*,
+    COUNT(DISTINCT cs.student_id) as current_student_count,
+    COUNT(DISTINCT CASE WHEN cs.is_guest = false THEN cs.student_id END) as enrolled_student_count,
+    COUNT(DISTINCT CASE WHEN cs.is_guest = true THEN cs.student_id END) as guest_student_count,
+    AVG(cs.positive_points) as avg_positive_points,
+    AVG(cs.negative_points) as avg_negative_points
+FROM classes c
+LEFT JOIN class_students cs ON c.id = cs.class_id
+GROUP BY c.id, c.public_id, c.name, c.student_count, c.total_capacity, c.is_active, c.created_at, c.updated_at;
+
+-- Triggers for Data Consistency
+CREATE OR REPLACE FUNCTION update_class_student_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        UPDATE classes 
+        SET student_count = student_count + 1, updated_at = CURRENT_TIMESTAMP 
+        WHERE id = NEW.class_id;
+        RETURN NEW;
+    ELSIF TG_OP = 'DELETE' THEN
+        UPDATE classes 
+        SET student_count = student_count - 1, updated_at = CURRENT_TIMESTAMP 
+        WHERE id = OLD.class_id;
+        RETURN OLD;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_class_student_count_insert
+    AFTER INSERT ON class_students
+    FOR EACH ROW
+    EXECUTE FUNCTION update_class_student_count();
+
+CREATE TRIGGER trigger_class_student_count_delete
+    AFTER DELETE ON class_students
+    FOR EACH ROW
+    EXECUTE FUNCTION update_class_student_count();
+
+-- Function to automatically create groups (5 students each, excluding guests)
+CREATE OR REPLACE FUNCTION auto_create_groups(class_id_param VARCHAR(255))
+RETURNS INTEGER AS $$
+DECLARE
+    student_count INTEGER;
+    group_count INTEGER;
+    group_id INTEGER;
+    class_student_rec RECORD;
+    current_group_size INTEGER := 0;
+BEGIN
+    -- Count non-guest students in this class
+    SELECT COUNT(*) INTO student_count 
+    FROM class_students 
+    WHERE class_id = class_id_param AND is_guest = false;
+    
+    -- Delete existing groups for this class
+    DELETE FROM groups WHERE class_id = class_id_param;
+    
+    -- Calculate number of groups needed
+    group_count := CEIL(student_count / 5.0);
+    
+    -- Create groups
+    FOR i IN 1..group_count LOOP
+        INSERT INTO groups (class_id, name) 
+        VALUES (class_id_param, 'Group ' || i)
+        RETURNING id INTO group_id;
+        
+        -- Assign class students to this group
+        current_group_size := 0;
+        FOR class_student_rec IN 
+            SELECT student_id FROM class_students 
+            WHERE class_id = class_id_param AND is_guest = false
+            AND student_id NOT IN (SELECT student_id FROM group_students WHERE class_id = class_id_param)
+            LIMIT 5
+        LOOP
+            INSERT INTO group_students (group_id, student_id, class_id) 
+            VALUES (group_id, class_student_rec.student_id, class_id_param);
+            current_group_size := current_group_size + 1;
+        END LOOP;
+    END LOOP;
+    
+    RETURN group_count;
+END;
+$$ LANGUAGE plpgsql;
 ```
 
 ### Frontend API Integration
