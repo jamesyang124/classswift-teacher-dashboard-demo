@@ -24,6 +24,8 @@ type Config struct {
 	ClassRedirectionBaseURL string
 	// BaseURL is the computed full base URL (protocol + host + port) for the backend.
 	BaseURL string
+	// CORSOrigins is a comma-separated list of allowed CORS origins.
+	CORSOrigins string
 }
 
 var (
@@ -58,6 +60,7 @@ func Init() {
 			TLSMode:                 tlsMode,
 			ClassRedirectionBaseURL: getEnv("CLASS_REDIRETION_BASE_URL", "https://www.classswift.viewsonic.io"),
 			BaseURL:                 baseURL,
+			CORSOrigins:             getEnv("CORS_ORIGINS", ""),
 		}
 	})
 }
@@ -91,6 +94,14 @@ func GinMode() string {
 		panic("config.Init() must be called before config.GinMode()")
 	}
 	return cfg.GinMode
+}
+
+// CORSOrigins returns the comma-separated list of allowed CORS origins.
+func CORSOrigins() string {
+	if cfg == nil {
+		panic("config.Init() must be called before config.CORSOrigins()")
+	}
+	return cfg.CORSOrigins
 }
 
 // Port returns the port the Gin server listens on.
