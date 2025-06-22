@@ -4,18 +4,18 @@ import { StyledCopyButton } from '../../styles';
 
 interface CopyButtonProps {
   textToCopy: string;
-  size?: string;
-  className?: string;
+  disabled?: boolean;
 }
 
 const CopyButton: React.FC<CopyButtonProps> = ({ 
   textToCopy, 
-  size = '14px', 
-  className 
+  disabled = false
 }) => {
   const [copied, setCopied] = useState(false);
 
   const copyToClipboard = async () => {
+    if (disabled || !textToCopy) return;
+    
     try {
       await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
@@ -29,9 +29,9 @@ const CopyButton: React.FC<CopyButtonProps> = ({
     <StyledCopyButton 
       onClick={copyToClipboard}
       $copied={copied}
-      className={className}
+      disabled={disabled}
     >
-      <MdContentCopy style={{ fontSize: size }} />
+      <MdContentCopy style={{ fontSize: '14px' }} />
     </StyledCopyButton>
   );
 };

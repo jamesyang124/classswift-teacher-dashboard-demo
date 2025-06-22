@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyledStudentGrid } from '../../styles/components';
+import { StyledStudentGrid, StyledScrollContainer } from '../../styles/components';
 import { StudentCard } from './StudentCard';
 
 interface Student {
@@ -21,7 +21,8 @@ export const StudentGrid: React.FC<StudentGridProps> = ({
   formatSeatNumber
 }) => {
   return (
-    <StyledStudentGrid>
+    <StyledScrollContainer>
+      <StyledStudentGrid>
       {students.map((student) => (
         <StudentCard 
           key={student.id} 
@@ -30,6 +31,7 @@ export const StudentGrid: React.FC<StudentGridProps> = ({
           formatSeatNumber={formatSeatNumber}
         />
       ))}
-    </StyledStudentGrid>
+      </StyledStudentGrid>
+    </StyledScrollContainer>
   );
 };

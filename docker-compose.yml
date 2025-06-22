@@ -34,7 +34,7 @@ services:
       - "3000:3000"
     environment:
       - PORT=3000
-      - HOST=0.0.0.0
+      - HOST=localhost
       - TLS_MODE=false
       - DATABASE_URL=postgres://classswift:password@db:5432/classswift_dev?sslmode=disable
       - REDIS_URL=redis://redis:6379

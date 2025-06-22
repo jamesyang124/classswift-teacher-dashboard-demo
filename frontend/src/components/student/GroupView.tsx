@@ -3,7 +3,8 @@ import {
   StyledGroupContainer, 
   StyledGroupSection, 
   StyledGroupTitle, 
-  StyledGroupStudents 
+  StyledGroupStudents,
+  StyledScrollContainer
 } from '../../styles/components';
 import { StudentCard } from './StudentCard';
 
@@ -39,6 +40,7 @@ export const GroupView: React.FC<GroupViewProps> = ({
   const groups = createGroups();
 
   return (
+    <StyledScrollContainer>
     <StyledGroupContainer>
       {groups.map((group, groupIndex) => (
         <StyledGroupSection key={groupIndex}>
@@ -56,5 +58,6 @@ export const GroupView: React.FC<GroupViewProps> = ({
         </StyledGroupSection>
       ))}
     </StyledGroupContainer>
+    </StyledScrollContainer>
   );
 };

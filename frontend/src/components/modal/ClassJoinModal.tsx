@@ -15,9 +15,7 @@ interface ClassJoinModalProps {}
 // Mock data based on TECHNICAL_DESIGN.md specifications
 const mockClassData = {
   classId: 'X58E9647',
-  className: '302 Science',
-  joinLink: 'https://www.classswift.viewsonic.io/join/X58E9647',
-  qrCodeUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=360x360&data=https://www.classswift.viewsonic.io/join/X58E9647'
+  className: '302 Science'
 };
 
 const ClassJoinModal: React.FC<ClassJoinModalProps> = () => {
@@ -34,7 +32,7 @@ const ClassJoinModal: React.FC<ClassJoinModalProps> = () => {
       <StyledModalTitle>Join {mockClassData.className}</StyledModalTitle>
         <ClassInfo classData={mockClassData} />
         <QRCodeDisplay 
-          qrCodeUrl={mockClassData.qrCodeUrl}
+          classId={mockClassData.classId}
           alt={`QR Code for joining ${mockClassData.className}`}
         />
 

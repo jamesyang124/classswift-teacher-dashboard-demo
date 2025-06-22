@@ -1,1 +1,6 @@
-// Class type definitions placeholder
+export interface ClassData {
+  classId: string;
+  className: string;
+  joinLink: string;
+  qrCodeUrl?: string;
+}

@@ -6,11 +6,12 @@ import {
   StyledInfoRowHorizontal
 } from '../../styles/components';
 import { CopyButton } from '../common';
+import { useQRCode } from '../../hooks/useQRCode';
 
 interface ClassData {
   classId: string;
   className: string;
-  joinLink: string;
+  joinLink?: string;
 }
 
 interface ClassInfoProps {
@@ -18,6 +19,10 @@ interface ClassInfoProps {
 }
 
 export const ClassInfo: React.FC<ClassInfoProps> = ({ classData }) => {
+  const { qrData, loading } = useQRCode(classData.classId);
+  
+  const joinLink = qrData?.joinLink || classData.joinLink || '';
+
   return (
     <StyledClassInfo>
       <StyledInfoRowHorizontal>
@@ -27,7 +32,10 @@ export const ClassInfo: React.FC<ClassInfoProps> = ({ classData }) => {
         </StyledInfoField>
         <StyledInfoField>
           <StyledInfoLabel>Link</StyledInfoLabel>
-          <CopyButton textToCopy={classData.joinLink} />
+          <CopyButton 
+            textToCopy={joinLink} 
+            disabled={loading || !joinLink}
+          />
         </StyledInfoField>
       </StyledInfoRowHorizontal>
     </StyledClassInfo>
