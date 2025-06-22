@@ -8,18 +8,12 @@ import {
   StyledPointsButton,
   StyledGuestOverlay
 } from '../../styles/components';
-
-interface Student {
-  id: number;
-  name: string;
-  points: number;
-  isGuest: boolean;
-}
+import type { Student } from '../../types/student';
 
 interface StudentCardProps {
   student: Student;
   onUpdatePoints: (studentId: number, change: number) => void;
-  formatSeatNumber: (id: number) => string;
+  formatSeatNumber: (seatNumber: number) => string;
 }
 
 export const StudentCard: React.FC<StudentCardProps> = ({ 
@@ -30,7 +24,7 @@ export const StudentCard: React.FC<StudentCardProps> = ({
   return (
     <StyledStudentCard $isGuest={student.isGuest}>
       <StyledSeatHeader $isGuest={student.isGuest}>
-        {formatSeatNumber(student.id)}
+        {formatSeatNumber(student.seatNumber!)}
       </StyledSeatHeader>
       <StyledStudentName $isGuest={student.isGuest}>
         {student.name}

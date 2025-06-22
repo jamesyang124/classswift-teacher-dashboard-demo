@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { 
   StyledGroupContainer, 
   StyledGroupSection, 
@@ -7,35 +8,75 @@ import {
   StyledScrollContainer
 } from '../../styles/components';
 import { StudentCard } from './StudentCard';
-
-interface Student {
-  id: number;
-  name: string;
-  points: number;
-  isGuest: boolean;
-}
+import { updateStudentPoints } from '../../store/slices/studentSlice';
+import type { RootState, AppDispatch } from '../../store';
 
 interface GroupViewProps {
-  students: Student[];
-  onUpdatePoints: (studentId: number, change: number) => void;
-  formatSeatNumber: (id: number) => string;
+  formatSeatNumber: (seatNumber: number) => string;
 }
 
 export const GroupView: React.FC<GroupViewProps> = ({
-  students,
-  onUpdatePoints,
   formatSeatNumber
 }) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { students, totalCapacity, loading, error } = useSelector((state: RootState) => state.student);
+
+  const handleUpdatePoints = (studentId: number, change: number) => {
+    dispatch(updateStudentPoints({ studentId, change }));
+  };
+
   const createGroups = () => {
-    const activeStudents = students.filter(student => !student.isGuest);
+    // Get enrolled students and guest seats, both sorted by seat number
+    const enrolledStudents = [];
+    const guestSeats = [];
+    
+    // Create a map of seat number to student
+    const seatMap = new Map<number, Student>();
+    students.forEach(student => {
+      if (student.seatNumber !== null && student.seatNumber !== undefined) {
+        seatMap.set(student.seatNumber, student);
+      }
+    });
+    
+    // Generate all seats up to capacity
+    for (let seatNumber = 1; seatNumber <= totalCapacity; seatNumber++) {
+      const student = seatMap.get(seatNumber);
+      if (student) {
+        enrolledStudents.push(student);
+      } else {
+        // Create guest seat placeholder
+        const guestSeat: Student = {
+          id: seatNumber,
+          name: 'Guest',
+          classId: 0,
+          seatNumber: seatNumber,
+          createdAt: '',
+          updatedAt: '',
+          points: 0,
+          isGuest: true
+        };
+        guestSeats.push(guestSeat);
+      }
+    }
+    
+    // Combine enrolled students first, then guest seats
+    const allStudents = [...enrolledStudents, ...guestSeats];
     const groups = [];
     
-    for (let i = 0; i < activeStudents.length; i += 5) {
-      groups.push(activeStudents.slice(i, i + 5));
+    for (let i = 0; i < allStudents.length; i += 5) {
+      groups.push(allStudents.slice(i, i + 5));
     }
     
     return groups;
   };
+
+  if (loading) {
+    return <div>Loading students...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   const groups = createGroups();
 
@@ -50,7 +91,7 @@ export const GroupView: React.FC<GroupViewProps> = ({
               <StudentCard 
                 key={student.id} 
                 student={student}
-                onUpdatePoints={onUpdatePoints}
+                onUpdatePoints={handleUpdatePoints}
                 formatSeatNumber={formatSeatNumber}
               />
             ))}

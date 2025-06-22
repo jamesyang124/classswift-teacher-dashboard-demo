@@ -1,19 +1,23 @@
 import styled, { ThemeProvider } from 'styled-components'
+import { Provider } from 'react-redux'
 import ClassJoinModal from './components/modal/ClassJoinModal'
 import ClassMgmtModal from './components/modal/ClassMgmtModal'
 import { GlobalStyles, theme } from './styles'
+import { store } from './store'
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <GlobalStyles />
-      <AppContainer>
-        <ModalContainer>
-          <ClassJoinModal />
-          <ClassMgmtModal />
-        </ModalContainer>
-      </AppContainer>
-    </ThemeProvider>
+    <Provider store={store}>
+      <ThemeProvider theme={theme}>
+        <GlobalStyles />
+        <AppContainer>
+          <ModalContainer>
+            <ClassJoinModal />
+            <ClassMgmtModal />
+          </ModalContainer>
+        </AppContainer>
+      </ThemeProvider>
+    </Provider>
   )
 }
 

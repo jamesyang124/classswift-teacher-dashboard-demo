@@ -42,8 +42,10 @@ services:
       - CORS_ORIGINS=http://localhost:5173
       - CLASS_REDIRETION_BASE_URL=https://www.classswift.viewsonic.io
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     develop:
       watch:
         - action: rebuild
@@ -66,8 +68,8 @@ services:
       - ./backend/migrations:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U classswift -d classswift_dev"]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 3
 
   # Redis for Session Storage and WebSocket State

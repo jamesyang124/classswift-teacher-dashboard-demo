@@ -24,7 +24,7 @@ up: ## Start services in background
 
 down: ## Stop all services
 	@echo "🛑 Stopping ClassSwift services..."
-	docker-compose down
+	docker-compose down --volumes
 
 logs: ## Show service logs
 	@echo "📜 Showing service logs..."

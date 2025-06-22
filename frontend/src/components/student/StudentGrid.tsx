@@ -1,36 +1,85 @@
 import React from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { StyledStudentGrid, StyledScrollContainer } from '../../styles/components';
 import { StudentCard } from './StudentCard';
-
-interface Student {
-  id: number;
-  name: string;
-  points: number;
-  isGuest: boolean;
-}
+import { updateStudentPoints } from '../../store/slices/studentSlice';
+import type { RootState, AppDispatch } from '../../store';
 
 interface StudentGridProps {
-  students: Student[];
-  onUpdatePoints: (studentId: number, change: number) => void;
-  formatSeatNumber: (id: number) => string;
+  formatSeatNumber: (seatNumber: number) => string;
 }
 
 export const StudentGrid: React.FC<StudentGridProps> = ({
-  students,
-  onUpdatePoints,
   formatSeatNumber
 }) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { students, totalCapacity, loading, error } = useSelector((state: RootState) => state.student);
+
+  const handleUpdatePoints = (studentId: number, change: number) => {
+    dispatch(updateStudentPoints({ studentId, change }));
+  };
+
+  // Create a map of seat number to student
+  // Only include students who have been assigned a seat (entered the class)
+  const seatMap = new Map<number, Student>();
+  students.forEach(student => {
+    if (student.seatNumber !== null && student.seatNumber !== undefined) {
+      seatMap.set(student.seatNumber, student);
+    }
+  });
+
+  // Generate grid slots based on total capacity
+  const generateGridSlots = () => {
+    const slots = [];
+    for (let seatNumber = 1; seatNumber <= totalCapacity; seatNumber++) {
+      const student = seatMap.get(seatNumber);
+      if (student) {
+        // Seated student
+        slots.push(
+          <StudentCard 
+            key={`seat-${seatNumber}`}
+            student={student}
+            onUpdatePoints={handleUpdatePoints}
+            formatSeatNumber={formatSeatNumber}
+          />
+        );
+      } else {
+        // Empty seat - create placeholder
+        const emptyStudent: Student = {
+          id: seatNumber,
+          name: 'Guest',
+          classId: 0,
+          seatNumber: seatNumber,
+          createdAt: '',
+          updatedAt: '',
+          points: 0,
+          isGuest: true // Use isGuest to indicate empty seat
+        };
+        slots.push(
+          <StudentCard 
+            key={`empty-${seatNumber}`}
+            student={emptyStudent}
+            onUpdatePoints={() => {}} // No action for empty seats
+            formatSeatNumber={formatSeatNumber}
+          />
+        );
+      }
+    }
+    return slots;
+  };
+
+  if (loading) {
+    return <div>Loading students...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
+
   return (
     <StyledScrollContainer>
       <StyledStudentGrid>
-      {students.map((student) => (
-        <StudentCard 
-          key={student.id} 
-          student={student}
-          onUpdatePoints={onUpdatePoints}
-          formatSeatNumber={formatSeatNumber}
-        />
-      ))}
+        {generateGridSlots()}
       </StyledStudentGrid>
     </StyledScrollContainer>
   );
