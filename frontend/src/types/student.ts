@@ -1,0 +1,1 @@
+// Student type definitions placeholder

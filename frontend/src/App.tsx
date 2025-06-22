@@ -1,16 +1,16 @@
 import styled, { ThemeProvider } from 'styled-components'
-import JoinClassModal from './components/JoinClassModal'
-import StudentManagementModal from './components/StudentManagementModal'
-import { theme } from './theme/theme'
-import './App.css'
+import ClassJoinModal from './components/modal/ClassJoinModal'
+import ClassMgmtModal from './components/modal/ClassMgmtModal'
+import { GlobalStyles, theme } from './styles'
 
 function App() {
   return (
     <ThemeProvider theme={theme}>
+      <GlobalStyles />
       <AppContainer>
         <ModalContainer>
-          <JoinClassModal />
-          <StudentManagementModal />
+          <ClassJoinModal />
+          <ClassMgmtModal />
         </ModalContainer>
       </AppContainer>
     </ThemeProvider>

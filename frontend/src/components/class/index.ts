@@ -1,0 +1,1 @@
+export { ClassInfo } from './ClassInfo';

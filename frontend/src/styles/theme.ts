@@ -1,5 +1,7 @@
+import type { ThemeType } from './theme.types';
+
 // Theme configuration based on UI/UX design specifications
-export const theme = {
+export const theme: ThemeType = {
   colors: {
     primary: '#3B82F6',        // Primary Blue for active elements
     success: '#10B981',        // Success Green for positive points
@@ -64,4 +66,4 @@ export const theme = {
   }
 };
 
-export type ThemeType = typeof theme;
+export type { ThemeType } from './theme.types';
