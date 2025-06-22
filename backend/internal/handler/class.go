@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 
 	"classswift-backend/config"
 	"classswift-backend/internal/model"
@@ -65,9 +66,19 @@ func GetClassStudents(c *gin.Context) {
 		return
 	}
 
+	enrolledCount := len(students)
+	availableSlots := class.TotalCapacity - enrolledCount
+
+	response := model.StudentsResponse{
+		Students:       students,
+		TotalCapacity:  class.TotalCapacity,
+		EnrolledCount:  enrolledCount,
+		AvailableSlots: availableSlots,
+	}
+
 	c.JSON(http.StatusOK, model.APIResponse{
 		Success: true,
-		Data:    students,
+		Data:    response,
 		Message: "Students retrieved successfully",
 	})
 }
@@ -140,19 +151,59 @@ func HandleStudentJoin(c *gin.Context) {
 		studentName = "Guest"
 	}
 
-	// Move join logic to service
-	joined, err := service.JoinStudentToClass(db, class, studentName)
-	if joined {
-		c.Redirect(http.StatusFound, config.ClassRedirectionBaseURL())
+	// Get seat number from query parameter
+	seatNumberStr := c.Query("seat")
+	if seatNumberStr == "" {
+		c.JSON(http.StatusBadRequest, model.APIResponse{
+			Success: false,
+			Message: "Seat number is required",
+			Errors:  []string{"Missing 'seat' query parameter"},
+		})
 		return
 	}
+
+	seatNumber := 0
+	if _, err := fmt.Sscanf(seatNumberStr, "%d", &seatNumber); err != nil || seatNumber <= 0 {
+		c.JSON(http.StatusBadRequest, model.APIResponse{
+			Success: false,
+			Message: "Invalid seat number",
+			Errors:  []string{"Seat number must be a positive integer"},
+		})
+		return
+	}
+
+	// Move join logic to service
+	err = service.JoinStudentToClass(db, class, studentName, seatNumber)
 	if err != nil {
+		if err == gorm.ErrDuplicatedKey {
+			c.JSON(http.StatusConflict, model.APIResponse{
+				Success: false,
+				Message: "Seat is already occupied",
+				Errors:  []string{fmt.Sprintf("Seat %d is already taken", seatNumber)},
+			})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, model.APIResponse{
 			Success: false,
 			Message: "Failed to add student to class",
 			Errors:  []string{err.Error()},
 		})
 		return
+	}
+
+	// Broadcast class update after successful student join
+	students, err := service.GetClassStudents(db, class.ID)
+	if err == nil {
+		enrolledCount := len(students)
+		availableSlots := class.TotalCapacity - enrolledCount
+
+		classUpdateData := map[string]interface{}{
+			"totalCapacity":  class.TotalCapacity,
+			"enrolledCount":  enrolledCount,
+			"availableSlots": availableSlots,
+		}
+
+		service.BroadcastClassUpdate(class.PublicID, "class_updated", classUpdateData)
 	}
 
 	c.Redirect(http.StatusFound, config.ClassRedirectionBaseURL())

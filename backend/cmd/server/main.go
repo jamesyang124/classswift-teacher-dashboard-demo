@@ -4,6 +4,7 @@ import (
 	"classswift-backend/config"
 	"classswift-backend/internal/handler"
 	"classswift-backend/internal/middleware"
+	"classswift-backend/internal/service"
 	"classswift-backend/pkg/database"
 	"classswift-backend/pkg/logger"
 
@@ -34,6 +35,9 @@ func main() {
 		panic(err)
 	}
 
+	// Initialize WebSocket hub
+	service.InitWebSocketHub()
+
 	// Create Gin router
 	r := gin.Default()
 
@@ -54,6 +58,7 @@ func main() {
 		handler.GetClassStudents,
 		handler.GetClassQRCode,
 		handler.HandleStudentJoin,
+		handler.HandleWebSocket,
 	)
 
 	logger.Infof("Starting ClassSwift API server on port %s", config.Port())

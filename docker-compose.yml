@@ -30,6 +30,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
+      no_cache: true
     ports:
       - "3000:3000"
     environment:
@@ -45,9 +46,8 @@ services:
       - redis
     develop:
       watch:
-        - action: sync
+        - action: rebuild
           path: ./backend
-          target: /app
           ignore:
             - ./backend/tmp/
             - ./backend/bin/

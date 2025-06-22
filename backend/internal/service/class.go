@@ -41,20 +41,40 @@ func GetStudentByNameAndClass(db *gorm.DB, name string, classID string) (*model.
 	return &student, nil
 }
 
-// JoinStudentToClass adds a student to a class or returns true if already joined.
-// Returns (alreadyJoined, error)
-func JoinStudentToClass(db *gorm.DB, class *model.Class, studentName string) (bool, error) {
+// JoinStudentToClass adds a student to a class with a specific seat number.
+func JoinStudentToClass(db *gorm.DB, class *model.Class, studentName string, seatNumber int) error {
+	// Check if seat is already occupied
+	var existingSeatStudent model.Student
+	result := db.Where("class_id = ? AND seat_number = ?", class.ID, seatNumber).First(&existingSeatStudent)
+	if result.Error == nil {
+		return gorm.ErrDuplicatedKey // Seat already occupied
+	}
+	
+	// Check if student is already enrolled
 	existingStudent, err := GetStudentByNameAndClass(db, studentName, class.ID)
+	
 	if err == nil && existingStudent != nil {
-		return true, nil // already joined
+		// Student is already enrolled, update their seat number
+		existingStudent.SeatNumber = &seatNumber
+		if err := db.Save(existingStudent).Error; err != nil {
+			return err
+		}
+		
+		return nil // already enrolled, now seated
 	}
+	
+	// Student is new, create them with the specified seat
 	student := &model.Student{
-		Name:    studentName,
-		ClassID: &class.ID,
+		Name:       studentName,
+		ClassID:    &class.ID,
+		SeatNumber: &seatNumber,
 	}
+	
 	err = CreateStudent(db, student)
 	if err != nil {
-		return false, err
+		return err
 	}
-	return false, nil
+	
+	return nil
 }
+

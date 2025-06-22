@@ -129,11 +129,29 @@ INSERT INTO classes (id, public_id, name, total_capacity) VALUES
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO students (name, class_id, seat_number) VALUES 
+-- Students with seat numbers (60% of total ~12 students)
 ('Philip', 'class-1', 1),
 ('Darrell', 'class-1', 2),
 ('Cody', 'class-1', 3),
-('Alice', 'class-1', NULL), -- Student in class but not seated
-('Guest', 'class-1', 4)
+('Zest', 'class-1', 4),
+('Maria', 'class-1', 5),
+('James', 'class-1', 6),
+('Sarah', 'class-1', 8),
+('Michael', 'class-1', 10),
+('Emma', 'class-1', 12),
+('David', 'class-1', 15),
+('Lisa', 'class-1', 18),
+('Robert', 'class-1', 20),
+('Raven', 'class-1', 27),
+-- Students enrolled but not yet seated (40% of total ~8 students)
+('Alice', 'class-1', NULL),
+('Jessica', 'class-1', NULL),
+('Daniel', 'class-1', NULL),
+('Ashley', 'class-1', NULL),
+('Ryan', 'class-1', NULL),
+('Hannah', 'class-1', NULL),
+('Tyler', 'class-1', NULL),
+('Sophia', 'class-1', NULL)
 ON CONFLICT DO NOTHING;
 
 -- Basic health check table to verify database connection

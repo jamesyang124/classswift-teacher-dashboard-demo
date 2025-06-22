@@ -27,11 +27,8 @@ func Init() (*gorm.DB, error) {
 		return nil, err
 	}
 
-	// Auto migrate the schema
-	err = db.AutoMigrate(&model.Class{}, &model.Student{})
-	if err != nil {
-		return nil, err
-	}
+	// Note: AutoMigrate is disabled since we use SQL migrations with views and triggers
+	// The database schema is managed by migrations in /migrations/ directory
 
 	// Insert sample data if database is empty
 	var classCount int64

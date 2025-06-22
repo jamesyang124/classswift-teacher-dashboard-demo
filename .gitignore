@@ -190,3 +190,5 @@ CLAUDE.md
 
 # LLM prompt files
 #.llm/
+
+.claude/
