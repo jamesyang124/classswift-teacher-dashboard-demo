@@ -11,8 +11,8 @@ services:
     volumes:
       - ./frontend/src:/app/src
     environment:
-      - VITE_API_URL=http://localhost:3000
-      - VITE_WS_URL=ws://localhost:3000
+      - VITE_API_BASE_URL=http://localhost:3000/api/v1
+      - VITE_APP_VERSION=1.1.7
     depends_on:
        - backend
     develop:

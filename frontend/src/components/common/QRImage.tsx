@@ -14,7 +14,7 @@ interface QRImageComponentProps {
  * - Development/Demo: Interactive with click simulation
  * - Production: Static display only
  */
-export const QRImage: React.FC<QRImageComponentProps> = ({ src, alt, classId }) => {
+export const QRImage: React.FC<QRImageComponentProps> = React.memo(({ src, alt, classId }) => {
   const [qrImageProps, setQrImageProps] = useState<QRImageProps | null>(null);
 
   useEffect(() => {
@@ -28,4 +28,4 @@ export const QRImage: React.FC<QRImageComponentProps> = ({ src, alt, classId }) 
   }
 
   return <StyledQRCodeImage {...qrImageProps} />;
-};
+});

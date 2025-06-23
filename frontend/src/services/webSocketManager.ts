@@ -31,13 +31,7 @@ class WebSocketManager {
   private errorListeners: Set<ErrorListener> = new Set();
   
   // Timers
-  private heartbeatInterval: number | null = null;
-  private heartbeatTimeout: number | null = null;
   private reconnectTimeout: number | null = null;
-  
-  // Constants
-  private readonly HEARTBEAT_INTERVAL = 10000; // 10 seconds
-  private readonly HEARTBEAT_TIMEOUT = 5000; // 5 seconds
   private readonly MAX_RECONNECT_ATTEMPTS = 10; // Increased for better reliability
   private readonly RECONNECT_DELAY_BASE = 1000; // 1 second base delay
   private readonly MAX_RECONNECT_DELAY = 15000; // Maximum 15 seconds delay
@@ -136,7 +130,6 @@ class WebSocketManager {
           console.log(`✅ WebSocket connected to class: ${classId} (ID: ${currentConnectionId})`);
           this.isConnecting = false;
           this.reconnectAttempts = 0;
-          this.startHeartbeat();
           this.notifyConnectionListeners(true);
           resolve();
         };
@@ -148,20 +141,14 @@ class WebSocketManager {
             return;
           }
           
+          
           try {
             const message: WebSocketMessage = JSON.parse(event.data);
-            
-            // Handle pong response
-            if (message.type === 'pong') {
-              console.log('💓 Received WebSocket pong');
-              this.clearHeartbeatTimeout();
-              return;
-            }
-            
             console.log('📩 WebSocket message received:', message);
             this.notifyMessageListeners(message);
           } catch (error) {
-            console.error('❌ Failed to parse WebSocket message:', error);
+            // If it's not JSON, it might be a simple text message like "ping" or "pong"
+            console.log('📩 WebSocket text message received:', event.data);
           }
         };
 
@@ -174,7 +161,6 @@ class WebSocketManager {
           
           console.error('❌ WebSocket error:', error);
           this.isConnecting = false;
-          this.clearTimers();
           this.notifyErrorListeners('WebSocket connection failed');
           reject(error);
         };
@@ -188,13 +174,11 @@ class WebSocketManager {
           
           console.log(`🔌 WebSocket disconnected: ${event.code} ${event.reason}`);
           this.isConnecting = false;
-          this.clearTimers();
+          this.clearReconnectTimer();
           this.notifyConnectionListeners(false);
           
           // Auto-reconnect for all unintentional disconnects (expanded conditions)
-          const shouldAutoReconnect = this.shouldReconnect && 
-            (event.code !== 1000 || !event.wasClean) && // Not a clean close
-            event.code !== 1001 && // Not going away
+          const shouldAutoReconnect = this.shouldReconnect &&
             this.reconnectAttempts < this.MAX_RECONNECT_ATTEMPTS;
             
           if (shouldAutoReconnect) {
@@ -220,7 +204,7 @@ class WebSocketManager {
   public disconnect(): void {
     console.log('🔌 Disconnecting WebSocket');
     this.shouldReconnect = false;
-    this.clearTimers();
+    this.clearReconnectTimer();
     
     if (this.ws) {
       // Only close if not already closed or closing
@@ -311,56 +295,7 @@ class WebSocketManager {
   }
 
   // Private methods
-  private startHeartbeat(): void {
-    this.clearTimers();
-    
-    console.log(`💓 Starting heartbeat with ${this.HEARTBEAT_INTERVAL}ms interval`);
-    
-    this.heartbeatInterval = setInterval(() => {
-      if (this.isConnected()) {
-        console.log('🔄 Sending WebSocket ping');
-        try {
-          this.ws!.send(JSON.stringify({ 
-            type: 'ping', 
-            timestamp: Date.now(),
-            classId: this.currentClassId 
-          }));
-          
-          // Set timeout to detect if server doesn't respond to ping
-          this.heartbeatTimeout = setTimeout(() => {
-            console.log('💔 Heartbeat timeout - server not responding, closing connection');
-            if (this.ws && this.isConnected()) {
-              this.ws.close(1000, 'Heartbeat timeout');
-            }
-          }, this.HEARTBEAT_TIMEOUT);
-          
-        } catch (error) {
-          console.error('❌ Failed to send heartbeat ping:', error);
-          // Close connection if we can't send ping
-          if (this.ws && this.isConnected()) {
-            this.ws.close(1000, 'Failed to send ping');
-          }
-        }
-      } else {
-        console.log('💔 WebSocket not connected, stopping heartbeat');
-        this.clearTimers();
-      }
-    }, this.HEARTBEAT_INTERVAL);
-  }
-
-  private clearHeartbeatTimeout(): void {
-    if (this.heartbeatTimeout) {
-      clearTimeout(this.heartbeatTimeout);
-      this.heartbeatTimeout = null;
-    }
-  }
-
-  private clearTimers(): void {
-    if (this.heartbeatInterval) {
-      clearInterval(this.heartbeatInterval);
-      this.heartbeatInterval = null;
-    }
-    this.clearHeartbeatTimeout();
+  private clearReconnectTimer(): void {
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;

@@ -56,17 +56,43 @@ func HandleWebSocket(c *gin.Context) {
 	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	conn.SetPongHandler(func(string) error {
 		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		logger.Infof("Received pong from client in class %s", classID)
 		return nil
 	})
 
-	// Read messages from client (mainly for keep-alive)
+	// Start heartbeat goroutine
+	go func() {
+		ticker := time.NewTicker(30 * time.Second) // Send ping every 30 seconds
+		defer ticker.Stop()
+
+		for range ticker.C {
+			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				logger.Errorf("Failed to send ping to client in class %s: %v", classID, err)
+				return
+			}
+			logger.Infof("Sent ping to client in class %s", classID)
+		}
+	}()
+
+	// Read messages from client (mainly for keep-alive and message handling)
 	for {
-		_, _, err := conn.ReadMessage()
+		messageType, message, err := conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("WebSocket error: %v", err)
 			}
 			break
+		}
+
+		// Handle different message types
+		switch messageType {
+		case websocket.TextMessage:
+			messageStr := string(message)
+			logger.Infof("Received text message from client in class %s: %s", classID, messageStr)
+			// You can add message processing logic here
+			
+		case websocket.PongMessage:
+			logger.Infof("Received pong frame from client in class %s", classID)
 		}
 	}
 }

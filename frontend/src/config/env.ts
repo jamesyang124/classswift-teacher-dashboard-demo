@@ -10,6 +10,7 @@ const env = {
   
   // Demo/Development Configuration  
   VITE_DEMO_MODE: import.meta.env.VITE_DEMO_MODE,
+  VITE_APP_VERSION: import.meta.env.VITE_APP_VERSION,
   
   // Build Mode
   MODE: import.meta.env.MODE,
@@ -54,7 +55,7 @@ export const config = {
   // Application Settings
   app: {
     name: 'ClassSwift Teacher Dashboard',
-    version: '1.0.0',
+    version: env.VITE_APP_VERSION || '1.0.0', // Fallback to current version
   },
 } as const;
 

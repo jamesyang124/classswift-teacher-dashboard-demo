@@ -8,6 +8,7 @@ import {
   StyledModalTitle,
   StyledCloseButton,
   StyledBackButton } from '../../styles';
+import { config } from '../../config';
 import styled from "styled-components";
 
 interface ClassJoinModalProps {}
@@ -36,7 +37,7 @@ const ClassJoinModal: React.FC<ClassJoinModalProps> = () => {
           alt={`QR Code for joining ${mockClassData.className}`}
         />
 
-        <StyledVersionInfo>Version 1.1.7</StyledVersionInfo>
+        <StyledVersionInfo>Version {config.app.version}</StyledVersionInfo>
     </ModalContent>
   );
 };

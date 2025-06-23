@@ -38,7 +38,7 @@ export const useSeatUpdates = () => {
         const isNewlySeated = (!prev && student) || (prev && student && prev.id !== student.id);
         
         // Debug logging for mock join animation
-        if (student && !student.isGuest) {
+        if (isNewlySeated) {
           console.log(`🪑 Seat ${seatNumber}: ${prev ? `${prev.name}` : 'empty'} -> ${student.name} (animate: ${isNewlySeated})`);
         }
         

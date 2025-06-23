@@ -11,7 +11,7 @@ interface QRCodeDisplayProps {
   alt: string;
 }
 
-export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ classId, alt }) => {
+export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = React.memo(({ classId, alt }) => {
   const { qrData, loading, error } = useQRCode(classId);
 
   if (loading) {
@@ -55,4 +55,4 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ classId, alt }) =>
       </StyledQRCodeContainer>
     </StyledQRCodeSection>
   );
-};
+});
