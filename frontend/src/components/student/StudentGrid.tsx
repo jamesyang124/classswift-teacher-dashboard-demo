@@ -60,10 +60,7 @@ export const StudentGrid: React.FC<StudentGridProps> = ({
         const emptyStudent: Student = {
           id: seatNumber,
           name: 'Guest',
-          classId: 0,
           seatNumber: seatNumber,
-          createdAt: '',
-          updatedAt: '',
           score: 0,
           isGuest: true // Use isGuest to indicate empty seat
         };

@@ -36,7 +36,7 @@ up: ## Start services in background
 down: ## Stop all services
 	@echo "🛑 Stopping ClassSwift services..."
 	docker-compose down --volumes
-	docker buildx prune --all
+	docker builder prune --all
 
 logs: ## Show service logs
 	@echo "📜 Showing service logs..."

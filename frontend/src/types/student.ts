@@ -1,16 +1,20 @@
 export interface Student {
   id: number;
   name: string;
-  classId: number;
   seatNumber?: number;
-  createdAt: string;
-  updatedAt: string;
   score: number;
   isGuest: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface StudentWithEnrollment extends Student {
+  classId: string;
+  enrolledAt: string;
 }
 
 export interface StudentsResponse {
-  students: Student[];
+  students: StudentWithEnrollment[];
   totalCapacity: number;
   enrolledCount: number;
   availableSlots: number;

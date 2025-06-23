@@ -59,10 +59,7 @@ export const GroupView: React.FC<GroupViewProps> = ({
         const guestSeat: Student = {
           id: seatNumber,
           name: 'Guest',
-          classId: 0,
           seatNumber: seatNumber,
-          createdAt: '',
-          updatedAt: '',
           score: 0,
           isGuest: true
         };

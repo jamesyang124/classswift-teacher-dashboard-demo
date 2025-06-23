@@ -47,7 +47,7 @@ export const ClassList: React.FC<ClassListProps> = ({ onSelectClass }) => {
   if (error) {
     return (
       <Container>
-        <Title>Your Classes</Title>
+        <Title>Active Classes</Title>
         <ErrorMessage>Error: {error}</ErrorMessage>
       </Container>
     );
@@ -55,7 +55,7 @@ export const ClassList: React.FC<ClassListProps> = ({ onSelectClass }) => {
 
   return (
     <Container>
-      <Title>Your Classes</Title>
+      <Title>Active Classes</Title>
       {classes.length === 0 ? (
         <EmptyMessage>No classes found</EmptyMessage>
       ) : (

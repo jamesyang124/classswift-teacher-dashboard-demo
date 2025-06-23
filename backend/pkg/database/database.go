@@ -2,7 +2,6 @@ package database
 
 import (
 	"classswift-backend/config"
-	"classswift-backend/internal/model"
 	"classswift-backend/pkg/logger"
 	"sync"
 
@@ -30,50 +29,10 @@ func Init() (*gorm.DB, error) {
 	// Note: AutoMigrate is disabled since we use SQL migrations with views and triggers
 	// The database schema is managed by migrations in /migrations/ directory
 
-	// Insert sample data if database is empty
-	var classCount int64
-	db.Model(&model.Class{}).Count(&classCount)
-	if classCount == 0 {
-		insertSampleData(db)
-	}
-
 	SetDB(db) // Set the global DB instance
 
 	logger.Info("Database initialized successfully")
 	return db, nil
-}
-
-// insertSampleData inserts initial sample data
-func insertSampleData(db *gorm.DB) {
-	// Create sample class
-	class := model.Class{
-		ID:            "class-1",
-		PublicID:      "X58E9647",
-		Name:          "302 Science",
-		StudentCount:  0,
-		TotalCapacity: 30,
-		IsActive:      true,
-	}
-	db.Create(&class)
-
-	// Create sample students
-	students := []model.Student{
-		{Name: "Philip", ClassID: &class.ID, SeatNumber: intPtr(1)},
-		{Name: "Darrell", ClassID: &class.ID, SeatNumber: intPtr(2)},
-		{Name: "Cody", ClassID: &class.ID, SeatNumber: intPtr(3)},
-		{Name: "Alice", ClassID: &class.ID, SeatNumber: nil}, // Not seated
-	}
-
-	for _, student := range students {
-		db.Create(&student)
-	}
-
-	logger.Info("Sample data inserted")
-}
-
-// Helper function to create int pointer
-func intPtr(i int) *int {
-	return &i
 }
 
 // SetDB sets the global DB instance
