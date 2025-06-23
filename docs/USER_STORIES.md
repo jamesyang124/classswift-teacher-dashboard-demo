@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document contains user stories based on the wireframe design, describing the functionality from the perspective of teachers and students using the ClassSwift Teacher Dashboard system.
+This document contains user stories based on the wireframe design, describing the functionality from the perspective of teachers and students using the ClassSwift Teacher Dashboard system. **Status: Implementation Complete - All core user stories implemented and demo-ready.**
 
 ## Teacher User Stories
 
@@ -26,16 +26,18 @@ This document contains user stories based on the wireframe design, describing th
 
 **As a teacher,**  
 **I want to view all students in a grid layout**  
-**So that I can monitor class attendance and manage student participation.**
+**So that I can monitor class attendance and manage student participation across multiple classes.**
 
-**Acceptance Criteria:**
+**Acceptance Criteria:** ✅ **IMPLEMENTED**
 - When I open the right modal, I can see students arranged in a 5-column grid
-- Each student card shows **Seat ID** (1, 2, 3... up to classroom capacity), student name, and current points
-- **Enrolled students** have blue header backgrounds after seat-based authentication
+- Each student card shows **Seat ID** (1, 2, 3... up to classroom capacity), student name, and current scores
+- **Enrolled students** have blue header backgrounds with randomized seat assignments (1-30)
 - **Guest seats** have gray header backgrounds showing "Guest" (empty or non-enrolled)
 - The header shows current enrollment "👥 16/30" indicating 16 out of 30 students
-- I can switch between "Student List" and "Group" tabs
-- The three-dot menu (⋮) provides "Reset Scores" and "Fresh Session" options (UI display only, non-functional)
+- I can switch between "Student List" and "Group" tabs with smooth transitions
+- The three-dot menu (⋮) provides "Reset All Seats" (functional) and "Fresh Session" (UI display)
+- **Multi-class support**: I can navigate between different classes via Class List background
+- **Real-time updates**: Students appear with smooth animations when joining
 
 ### Scoring System
 
@@ -58,13 +60,15 @@ This document contains user stories based on the wireframe design, describing th
 **I want to see students appear in the grid immediately when they join through the redirect flow**  
 **So that I can monitor class attendance without manual refresh.**
 
-**Acceptance Criteria:**
-- When students complete authentication via ClassSwift ViewSonic platform, they appear automatically in their specific seat position
+**Acceptance Criteria:** ✅ **IMPLEMENTED**
+- When students complete authentication via ClassSwift ViewSonic platform, they appear automatically in their randomized seat position (1-30 or null)
 - Student names replace "Guest" placeholders in real-time for that specific Seat ID
-- Blue header background replaces gray background for authenticated seats
+- Blue header background replaces gray background for authenticated seats with smooth CSS animations
 - The student count updates automatically (16/30, max 30 students)
 - No page refresh is required to see new students
-- **Seat assignments are locked** - one student per seat for entire session
+- **Multi-class enrollment**: Students can be enrolled in multiple classes with independent seat assignments
+- **Animation system**: Only newly seated students trigger animations, not existing students
+- **WebSocket priority**: Real-time updates take precedence over Redux store for immediate feedback
 
 ### Class Navigation and Control
 
@@ -72,16 +76,17 @@ This document contains user stories based on the wireframe design, describing th
 **I want to easily navigate between different views and close modals independently**  
 **So that I can efficiently manage my classroom interface.**
 
-**Acceptance Criteria:**
+**Acceptance Criteria:** ✅ **IMPLEMENTED**
 - I can click "< Back to Class List" to return to main class selection
 - I can close left modal using X button (only closes left modal, no navigation)
 - I can close right modal using X button (only closes right modal, no navigation)
-- Both modals can operate independently and simultaneously
-- When no modals are open, I see a blank state or return to Class List view
+- Both modals can operate independently and simultaneously with proper z-index layering
+- When no modals are open, I see the **Class List with real database classes**
 - Tab navigation allows switching between "Student List" and "Group" views
-- The three-dot menu provides UI-only display:
-  - **"Reset Scores"**: UI display only (non-functional)
+- The three-dot menu provides:
+  - **"Reset All Seats"**: Functional - resets all seated students to null
   - **"Fresh Session"**: UI display only (non-functional)
+- **Class selection**: I can switch between different classes from the Class List background
 
 ## Student User Stories
 
@@ -91,15 +96,16 @@ This document contains user stories based on the wireframe design, describing th
 **I want to join my class by scanning the classroom QR code**  
 **So that I can authenticate through ClassSwift ViewSonic and appear in the teacher's dashboard.**
 
-**Acceptance Criteria:**
+**Acceptance Criteria:** ✅ **IMPLEMENTED**
 - I can scan the **classroom QR code** displayed on the teacher's screen using my mobile device
 - The QR code redirects me to https://www.classswift.viewsonic.io/ for authentication
 - After completing authentication, I am redirected back to the application
 - The QR code works with standard camera apps and QR scanners
-- After scanning, I complete **seat-based authentication** process
-- Upon successful authentication, I receive a **session token** for this seat
-- My name appears in the teacher's student grid at my specific **Seat ID** without delay
-- My seat card changes from gray "Guest" to blue with my name
+- **Multi-class enrollment**: I can be enrolled in multiple classes simultaneously
+- Upon successful authentication, I am assigned a **randomized seat number** (1-30 or null)
+- My name appears in the teacher's student grid at my assigned **Seat ID** with smooth animation
+- My seat card changes from gray "Guest" to blue with my name and includes animation effects
+- **Database persistence**: My enrollment is stored in the normalized class_enrollments table
 
 ### Alternative Joining Methods
 
@@ -152,13 +158,14 @@ This document contains user stories based on the wireframe design, describing th
 **I want to automatically organize enrolled students into groups of 5**  
 **So that teachers can easily manage collaborative activities.**
 
-**Acceptance Criteria:**
-- **Enrolled students only** are automatically grouped in sets of 5 based on seat authentication order
+**Acceptance Criteria:** ✅ **IMPLEMENTED**
+- **Enrolled students only** are automatically grouped in sets of 5 based on enrollment order
 - **Uneven divisions** create additional smaller groups (e.g., 23 students = 4 groups of 5 + 1 group of 3)
 - **Guest seats** are grouped separately after enrolled student groups are formed
-- Group view shows clear visual separation between groups
+- Group view shows clear visual separation between groups with **rounded border containers**
 - Groups are numbered sequentially (Group 1, Group 2, Group 3, etc.)
 - **Local client-side storage** maintains group assignments during session
+- **Multi-class context**: Group formation works independently for each class
 
 ### Real-time Synchronization
 
@@ -166,12 +173,13 @@ This document contains user stories based on the wireframe design, describing th
 **I want to maintain real-time synchronization between seat authentication and student display**  
 **So that teachers have accurate, up-to-date seat assignment information.**
 
-**Acceptance Criteria:**
-- **Seat authentication** completions appear instantly in specific seat positions
-- **Session tokens** are validated and stored for browser refresh persistence
+**Acceptance Criteria:** ✅ **IMPLEMENTED**
+- **Multi-class enrollment** completions appear instantly with randomized seat assignments
+- **Database constraints** prevent duplicate enrollments and seat conflicts per class
 - Score changes are immediately visible across all interfaces
-- Student count updates automatically as students complete authentication
-- **Seat assignment conflicts** are prevented (one student per seat)
+- Student count updates automatically as students join classes
+- **Unique constraints** prevent seat assignment conflicts (one student per seat per class)
 - No manual refresh required for any real-time updates
-- Multiple simultaneous authentications are handled without seat conflicts
-- **WebSocket updates** broadcast seat assignments to teacher dashboard
+- Multiple simultaneous enrollments are handled without conflicts
+- **WebSocket updates** broadcast seat assignments to teacher dashboard with animation priority
+- **Animation system** provides smooth transitions for newly seated students only

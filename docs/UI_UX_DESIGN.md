@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document contains the visual design requirements and user experience guidelines for the ClassSwift Teacher Dashboard application, based on the wireframe design and interface specifications.
+This document contains the visual design requirements and user experience guidelines for the ClassSwift Teacher Dashboard application, based on the wireframe design and interface specifications. Updated to reflect the completed multi-class enrollment system and animation features.
 
 ## Wireframe Analysis
 
@@ -108,9 +108,17 @@ The interface consists of two primary modal panels operating independently:
 2. Students scan QR code which redirects them to https://www.classswift.viewsonic.io/
 3. Students complete authentication process on ClassSwift ViewSonic platform
 4. Students are redirected back to application with session tokens
-5. Enrolled students appear immediately in specific seat positions in right modal grid
+5. Enrolled students appear immediately in randomized seat positions (1-30 or null) in right modal grid
 6. Seat cards transform from gray "Guest" to blue with student name
-7. Real-time updates without page refresh
+7. Real-time updates with smooth CSS animations for newly seated students
+8. Animation system only triggers for new student joins, not existing students
+
+### Multi-Class Enrollment Support
+- **Database Schema**: Students can be enrolled in multiple classes simultaneously
+- **Seat Assignment**: Each class enrollment has independent seat numbers (1-30 or null)
+- **Class Navigation**: Teachers can switch between different classes using the Class List
+- **Real-time Updates**: WebSocket updates specific to each class context
+- **Animation Priority**: Real-time updates take precedence over Redux store for immediate visual feedback
 
 ### Score Management Flow
 1. Teacher opens right modal (scores reset to 0 when panel opens)
@@ -123,6 +131,15 @@ The interface consists of two primary modal panels operating independently:
 ### Navigation Patterns
 - **Modal Independence**: Both modals operate simultaneously, closing one modal does not affect the other or cause navigation changes
 - **Clear Exit Points**: X buttons for closing individual modals only
-- **Background State**: When no modals are open, display blank state or return to Class List view
+- **Background State**: When no modals are open, displays Class List view with real database classes
+- **Class List Integration**: Shows real classes from database with proper formatting and status indicators
 - **Text Truncation**: ID text uses full available width with ellipsis, classroom names limited to 50% modal width with ellipsis
 - **Persistent State**: Interface maintains state during session
+- **Modal Overlay**: Modals appear on top of Class List with proper z-index layering
+
+### Animation System
+- **Seat Transition Effects**: Smooth CSS transitions when students join classes
+- **Animation Triggers**: Only newly seated students trigger animations
+- **Performance Optimization**: Animation state managed efficiently to prevent unnecessary re-renders
+- **Real-time Priority**: WebSocket updates take precedence for immediate visual feedback
+- **Seat Assignment**: Randomized seat numbers (1-30) or null for unseated students

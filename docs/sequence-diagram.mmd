@@ -1,0 +1,131 @@
+sequenceDiagram
+    participant T as Teacher
+    participant UI as Frontend (React)
+    participant WS as WebSocket
+    participant API as Backend (Go)
+    participant DB as PostgreSQL
+    participant VS as ClassSwift ViewSonic
+    participant S as Student
+
+    Note over T,S: ClassSwift Teacher Dashboard - Multi-Class Enrollment System
+
+    %% Class List and Selection
+    rect rgb(240, 248, 255)
+        Note over T,DB: 1. Class List Navigation
+        T->>UI: Open ClassSwift Dashboard
+        UI->>API: GET /api/v1/classes
+        API->>DB: SELECT * FROM classes
+        DB-->>API: Return class list
+        API-->>UI: Classes with metadata
+        UI-->>T: Display Class List (real DB data)
+        T->>UI: Select class (e.g., "302 Science")
+    end
+
+    %% QR Code Generation and Display
+    rect rgb(245, 255, 245)
+        Note over T,API: 2. QR Code Generation (Left Modal)
+        T->>UI: Open left modal
+        UI->>API: GET /api/v1/classes/X58E9647/qr
+        API-->>UI: QR code + redirect URL
+        UI-->>T: Display QR code (redirects to ClassSwift ViewSonic)
+        Note over T: QR code displayed on classroom projector
+    end
+
+    %% Student Joining Flow
+    rect rgb(255, 248, 240)
+        Note over S,DB: 3. Student Authentication & Enrollment
+        S->>S: Scan QR code with mobile device
+        Note over S,VS: QR code redirects to ClassSwift ViewSonic
+        S->>VS: Complete authentication
+        VS-->>S: Redirect back with session tokens
+        S->>API: Join class with credentials
+        API->>DB: INSERT INTO class_enrollments (student_id, class_id, seat_number)
+        Note over DB: Randomized seat assignment (1-30 or null)
+        DB-->>API: Enrollment confirmed
+        API->>WS: Broadcast seat assignment
+        WS-->>UI: Real-time student update
+        UI-->>T: Student appears with animation
+        Note over UI: Blue card replaces gray "Guest"
+    end
+
+    %% Real-time Updates and Animation
+    rect rgb(248, 240, 255)
+        Note over T,UI: 4. Real-time Student Grid Updates
+        UI->>UI: Check animation trigger (useSeatUpdates)
+        Note over UI: Only newly seated students animate
+        UI->>UI: Apply smooth CSS transitions
+        UI->>UI: Update Redux store (WebSocket priority)
+        T->>T: See student in 5-column grid
+        Note over T: Student count updates (16/30)
+    end
+
+    %% Score Management
+    rect rgb(255, 245, 245)
+        Note over T,DB: 5. Score Management (0-100 System)
+        T->>UI: Click + button on student card
+        UI->>UI: Update score in Redux store
+        UI->>API: POST score update
+        API->>DB: UPDATE student scores
+        DB-->>API: Score updated
+        API-->>UI: Confirmation
+        UI-->>T: Immediate visual feedback
+        Note over UI: Blue badge shows new score
+        
+        T->>UI: Click - button (if score > 0)
+        UI->>UI: Prevent if score = 0 (disabled button)
+        Note over UI: Minimum constraint enforced
+    end
+
+    %% Group Formation
+    rect rgb(240, 255, 240)
+        Note over T,UI: 6. Automatic Group Formation
+        T->>UI: Switch to "Group" tab
+        UI->>UI: Generate groups (5 students each)
+        UI->>UI: Create visual containers (rounded borders)
+        Note over UI: Enrolled students first, then guests
+        UI-->>T: Display grouped students
+        Note over T: Groups: 4 groups of 5 + 1 group of 3 (for 23 students)
+    end
+
+    %% Multi-Class Support
+    rect rgb(255, 255, 240)
+        Note over T,DB: 7. Multi-Class Navigation
+        T->>UI: Close modals, return to Class List
+        UI-->>T: Show Class List (real DB classes)
+        T->>UI: Select different class
+        UI->>API: GET /api/v1/classes/B72F4891/students
+        API->>DB: SELECT FROM class_enrollments WHERE class_id = ?
+        DB-->>API: Students for this class
+        API-->>UI: Independent student data
+        UI-->>T: New class with different enrollments
+        Note over T: Students can be in multiple classes
+    end
+
+    %% Seat Reset Functionality
+    rect rgb(255, 240, 248)
+        Note over T,DB: 8. Seat Reset (Menu System)
+        T->>UI: Click three-dot menu (⋮)
+        UI-->>T: Show dropdown menu
+        T->>UI: Select "Reset All Seats"
+        UI->>API: POST /api/v1/classes/X58E9647/reset-seats
+        API->>DB: UPDATE class_enrollments SET seat_number = NULL
+        DB-->>API: All seats reset
+        API->>WS: Broadcast reset event
+        WS-->>UI: Real-time reset update
+        UI-->>T: All students show as unseated
+        Note over UI: Seat numbers reset to null
+    end
+
+    %% Error Handling
+    rect rgb(248, 248, 248)
+        Note over UI,DB: 9. Error Handling & Constraints
+        Note over DB: Database constraints prevent conflicts
+        Note over DB: - Unique student per class
+        Note over DB: - Unique seat per class
+        Note over DB: - Foreign key constraints
+        Note over UI: Frontend validation
+        Note over UI: - Score range 0-100
+        Note over UI: - Disabled controls for guests
+        Note over WS: WebSocket reconnection
+        Note over API: Graceful error responses
+    end
