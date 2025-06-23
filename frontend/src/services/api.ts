@@ -1,9 +1,19 @@
 import type { QRCodeResponse, APIResponse } from '../types/api';
-import type { ClassResponse } from '../types/class';
+import type { ClassResponse, ClassInfo } from '../types/class';
 import type { StudentsResponse } from '../types/student';
 import { config } from '../config/env';
 
 export const apiService = {
+  async getClasses(): Promise<APIResponse<ClassInfo[]>> {
+    const response = await fetch(`${config.api.baseUrl}/classes`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch classes: ${response.statusText}`);
+    }
+    
+    return response.json();
+  },
+
   async getClassInfo(classId: string): Promise<APIResponse<ClassResponse>> {
     const response = await fetch(`${config.api.baseUrl}/classes/${classId}`);
     

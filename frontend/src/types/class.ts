@@ -1,13 +1,12 @@
 export interface ClassData {
-  classId: string;
-  className: string;
+  publicId: string;
+  name: string;
   joinLink: string;
   qrCodeUrl?: string;
 }
 
 export interface ClassInfo {
-  id: number;
-  publicId: string;
+  publicId: string; // Use publicId as the main identifier
   name: string;
   isActive: boolean;
   createdAt: string;

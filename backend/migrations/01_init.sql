@@ -124,42 +124,48 @@ CREATE TRIGGER trigger_classes_updated_at
     EXECUTE FUNCTION update_updated_at_column();
 
 -- Sample Data for Development
-INSERT INTO classes (id, public_id, name, total_capacity) VALUES 
-('class-1', 'X58E9647', '302 Science', 30)
+INSERT INTO classes (id, public_id, name) VALUES 
+('class-1', 'X58E9647', '302 Science'),
+('class-2', 'A12B3456', '101 Math'),
+('class-3', 'B23C4567', '205 History'),
+('class-4', 'C34D5678', 'Art Studio'),
+('class-5', 'D45E6789', 'English Literature')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO students (name, class_id, seat_number) VALUES 
--- Students with seat numbers
+-- class-1
 ('Philip', 'class-1', 1),
 ('Darrell', 'class-1', 2),
-('Cody', 'class-1', 3),
-('Zest', 'class-1', 4),
-('Maria', 'class-1', 5),
-('James', 'class-1', 6),
-('Sarah', 'class-1', 8),
-('Michael', 'class-1', 10),
-('Emma', 'class-1', 12),
-('David', 'class-1', 15),
-('Lisa', 'class-1', 18),
-('Robert', 'class-1', 20),
-('Raven', 'class-1', 27),
--- Students enrolled but not yet seated
-('Alice', 'class-1', NULL),
+('Maria', 'class-1', 3),
 ('Jessica', 'class-1', NULL),
-('Daniel', 'class-1', NULL),
 ('Ashley', 'class-1', NULL),
-('Ryan', 'class-1', NULL),
-('Hannah', 'class-1', NULL),
-('Tyler', 'class-1', NULL),
-('Sophia', 'class-1', NULL),
-('Olivia', 'class-1', NULL),
-('Ethan', 'class-1', NULL),
-('Mason', 'class-1', NULL),
-('Ava', 'class-1', NULL),
-('Isabella', 'class-1', NULL),
-('Lucas', 'class-1', NULL),
-('Mia', 'class-1', NULL),
-('Logan', 'class-1', NULL)
+-- class-2
+('Cody', 'class-2', 1),
+('Zest', 'class-2', 2),
+('James', 'class-2', 3),
+('Sarah', 'class-2', NULL),
+('Michael', 'class-2', NULL),
+-- class-3
+('Emma', 'class-3', 1),
+('David', 'class-3', 2),
+('Lisa', 'class-3', 3),
+('Robert', 'class-3', NULL),
+('Raven', 'class-3', NULL),
+-- class-4
+('Olivia', 'class-4', 1),
+('Ethan', 'class-4', 2),
+('Mason', 'class-4', NULL),
+('Ava', 'class-4', NULL),
+('Isabella', 'class-4', 3),
+('Lucas', 'class-4', 4),
+-- class-5
+('Mia', 'class-5', 1),
+('Logan', 'class-5', 2),
+('Noah', 'class-5', NULL),
+('Liam', 'class-5', NULL),
+('Jacob', 'class-5', 3),
+('Sophia', 'class-5', 4),
+('William', 'class-5', NULL)
 ON CONFLICT DO NOTHING;
 
 -- Basic health check table to verify database connection

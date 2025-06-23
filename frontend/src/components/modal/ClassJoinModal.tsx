@@ -10,31 +10,33 @@ import {
   StyledBackButton } from '../../styles';
 import { config } from '../../config';
 import styled from "styled-components";
+import { useSelector } from 'react-redux';
+import type { RootState } from '../../store';
 
-interface ClassJoinModalProps {}
+interface ClassJoinModalProps {
+  onClose?: () => void;
+  onBackToClassList?: () => void;
+  classId: string;
+}
 
-// Mock data based on TECHNICAL_DESIGN.md specifications
-const mockClassData = {
-  classId: 'X58E9647',
-  className: '302 Science'
-};
-
-const ClassJoinModal: React.FC<ClassJoinModalProps> = () => {
+const ClassJoinModal: React.FC<ClassJoinModalProps> = ({ onClose, onBackToClassList, classId }) => {
+  const className = useSelector((state: RootState) => state.class.classInfo?.name || '');
+  const classData = { classId, className };
   return (
     <ModalContent>
-      <CloseButton>×</CloseButton>
+      <CloseButton onClick={onClose}>×</CloseButton>
       
       <StyledModalHeader>
-        <StyledBackButton>
+        <StyledBackButton onClick={onBackToClassList}>
           <FaChevronLeft style={{ fontSize: '12px', marginRight: '4px' }} /> Back to Class List
         </StyledBackButton>
       </StyledModalHeader>
 
-      <StyledModalTitle>Join {mockClassData.className}</StyledModalTitle>
-        <ClassInfo classData={mockClassData} />
+      <StyledModalTitle>Join {classData.className}</StyledModalTitle>
+        <ClassInfo classData={classData} />
         <QRCodeDisplay 
-          classId={mockClassData.classId}
-          alt={`QR Code for joining ${mockClassData.className}`}
+          classId={classData.classId}
+          alt={`QR Code for joining ${classData.className}`}
         />
 
         <StyledVersionInfo>Version {config.app.version}</StyledVersionInfo>
