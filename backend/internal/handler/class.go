@@ -83,6 +83,24 @@ func GetClassStudents(c *gin.Context) {
 	})
 }
 
+// GetClasses handles GET /api/v1/classes
+func GetClasses(c *gin.Context) {
+	db := database.GetDB()
+	classes, err := service.GetClasses(db)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, model.APIResponse{
+			Success: false,
+			Message: "Failed to retrieve classes",
+			Errors:  []string{err.Error()},
+		})
+		return
+	}
+	c.JSON(http.StatusOK, model.APIResponse{
+		Success: true,
+		Data:    classes,
+		Message: "Classes retrieved successfully",
+	})
+}
 
 // GetClassQRCode handles GET /api/v1/classes/:classId/qr
 func GetClassQRCode(c *gin.Context) {
@@ -121,6 +139,26 @@ func GetClassQRCode(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+// ClearSeatForClassByPublicID handles POST /api/v1/classes/:classId/clear-seats
+func ClearSeatForClassByPublicID(c *gin.Context) {
+	db := database.GetDB()
+	classID := c.Param("classId")
+	class, err := service.ClearSeatForClassByPublicID(db, classID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, model.APIResponse{
+			Success: false,
+			Message: "Failed to clear seats",
+			Errors:  []string{err.Error()},
+		})
+		return
+	}
+	c.JSON(http.StatusOK, model.APIResponse{
+		Success: true,
+		Data:    class,
+		Message: "Seats cleared successfully",
+	})
 }
 
 // HandleStudentJoin handles GET /api/v1/classes/:classId/join

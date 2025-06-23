@@ -54,6 +54,7 @@ func main() {
 	// Class routes
 	v1.RegisterClassRoutes(
 		r.Group("/api/v1"),
+		handler.GetClasses,
 		handler.GetClass,
 		handler.GetClassStudents,
 		handler.GetClassQRCode,
