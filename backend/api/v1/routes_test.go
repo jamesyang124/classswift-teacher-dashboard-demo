@@ -16,7 +16,7 @@ func dummyHandler(c *gin.Context) {
 func TestRegisterClassRoutes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	v1.RegisterClassRoutes(r.Group("/api/v1"), dummyHandler, dummyHandler, dummyHandler, dummyHandler, dummyHandler)
+	v1.RegisterClassRoutes(r.Group("/api/v1"), dummyHandler, dummyHandler, dummyHandler, dummyHandler, dummyHandler, dummyHandler, dummyHandler)
 
 	endpoints := []string{
 		"/api/v1/classes/abc",

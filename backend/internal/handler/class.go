@@ -67,7 +67,14 @@ func GetClassStudents(c *gin.Context) {
 	}
 
 	enrolledCount := len(students)
-	availableSlots := class.TotalCapacity - enrolledCount
+	// Calculate available slots as students without a seat assignment
+	seatedCount := 0
+	for _, s := range students {
+		if s.SeatNumber != nil {
+			seatedCount++
+		}
+	}
+	availableSlots := class.TotalCapacity - seatedCount
 
 	response := model.StudentsResponse{
 		Students:       students,
@@ -154,6 +161,29 @@ func ClearSeatForClassByPublicID(c *gin.Context) {
 		})
 		return
 	}
+
+	// Fetch latest students and broadcast class update
+	students, serr := service.GetClassStudents(db, class.ID)
+	if serr == nil {
+		enrolledCount := len(students)
+		// Calculate available slots as students without a seat assignment
+		seatedCount := 0
+		for _, s := range students {
+			if s.SeatNumber != nil {
+				seatedCount++
+			}
+		}
+		availableSlots := class.TotalCapacity - seatedCount
+
+		classUpdateData := map[string]interface{}{
+			"totalCapacity":  class.TotalCapacity,
+			"enrolledCount":  enrolledCount,
+			"availableSlots": availableSlots,
+			"students":       students,
+		}
+		service.BroadcastClassUpdate(class.PublicID, "class_updated", classUpdateData)
+	}
+
 	c.JSON(http.StatusOK, model.APIResponse{
 		Success: true,
 		Data:    class,
@@ -234,7 +264,14 @@ func HandleStudentJoin(c *gin.Context) {
 	students, err := service.GetClassStudents(db, class.ID)
 	if err == nil {
 		enrolledCount := len(students)
-		availableSlots := class.TotalCapacity - enrolledCount
+		// Calculate available slots as students without a seat assignment
+		seatedCount := 0
+		for _, s := range students {
+			if s.SeatNumber != nil {
+				seatedCount++
+			}
+		}
+		availableSlots := class.TotalCapacity - seatedCount
 
 		classUpdateData := map[string]interface{}{
 			"totalCapacity":  class.TotalCapacity,

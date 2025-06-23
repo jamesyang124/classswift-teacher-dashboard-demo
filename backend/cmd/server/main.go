@@ -60,6 +60,7 @@ func main() {
 		handler.GetClassQRCode,
 		handler.HandleStudentJoin,
 		handler.HandleWebSocket,
+		handler.ClearSeatForClassByPublicID,
 	)
 
 	logger.Infof("Starting ClassSwift API server on port %s", config.Port())

@@ -41,6 +41,18 @@ export const fetchClassInfoAndStudents = createAsyncThunk(
   }
 );
 
+export const clearClassSeats = createAsyncThunk(
+  'class/clearClassSeats',
+  async (classId: string, { rejectWithValue }) => {
+    try {
+      const response = await apiService.clearClassSeats(classId);
+      return response.data;
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || err.message || 'Failed to clear class seats');
+    }
+  }
+);
+
 const classSlice = createSlice({
   name: 'class',
   initialState,
@@ -81,6 +93,21 @@ const classSlice = createSlice({
       .addCase(fetchClassInfoAndStudents.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to fetch class info and students';
+      })
+      .addCase(clearClassSeats.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(clearClassSeats.fulfilled, (state, action) => {
+        state.loading = false;
+        // Optionally update classInfo if backend returns updated class
+        if (action.payload && action.payload.class) {
+          state.classInfo = action.payload.class;
+        }
+      })
+      .addCase(clearClassSeats.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string || 'Failed to clear class seats';
       });
   },
 });

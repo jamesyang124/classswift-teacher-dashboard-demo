@@ -11,15 +11,16 @@ import {
  } from '../../styles/components';
 import { IoPersonSharp } from "react-icons/io5";
 import { fetchClassInfoAndStudents } from '../../store/slices/classSlice';
-import { updateClassCapacity, updateStudents, clearAllPoints, resetAllSeats } from '../../store/slices/studentSlice';
+import { updateClassCapacity, updateStudents, clearAllPoints } from '../../store/slices/studentSlice';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { useSeatUpdates } from '../../hooks/useSeatUpdates';
+import { clearClassSeats } from '../../store/slices/classSlice';
 import type { RootState, AppDispatch } from '../../store';
 
 const ClassMgmtModal: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { classInfo, loading, error } = useSelector((state: RootState) => state.class);
-  const { students, totalCapacity, enrolledCount } = useSelector((state: RootState) => state.student);
+  const { students, totalCapacity, availableSlots } = useSelector((state: RootState) => state.student);
   const { lastMessage } = useSelector((state: RootState) => state.websocket);
 
   const [activeTab, setActiveTab] = useState<'student' | 'group'>('student');
@@ -80,9 +81,11 @@ const ClassMgmtModal: React.FC = () => {
     dispatch(clearAllPoints());
   };
 
-  const handleResetAllSeats = () => {
-    dispatch(resetAllSeats());
-    // Also clear seat updates
+  // Replace handleResetAllSeats to use the async thunk for backend reset
+  const handleResetAllSeats = async () => {
+    // Dispatch the async thunk to clear seats in backend and broadcast
+    await dispatch(clearClassSeats(classId));
+    // Also clear seat updates (for local UI animation reset)
     clearUpdates();
     initialSyncRef.current = false;
   };
@@ -107,6 +110,9 @@ const ClassMgmtModal: React.FC = () => {
     );
   };
 
+  // Calculate seated count (students who are not guests and have a seatNumber assigned)
+  const seatedCount = totalCapacity - availableSlots;
+
   return (
     <StyledModalContent>
       <CloseButton>×</CloseButton>
@@ -116,7 +122,7 @@ const ClassMgmtModal: React.FC = () => {
           <ClassName>
             {loading ? 'Loading...' : error ? 'Error loading class' : classInfo?.name || '302 Science'}
           </ClassName>
-          <StudentCount><IoPersonSharp /> {enrolledCount}/{totalCapacity}</StudentCount>
+          <StudentCount><IoPersonSharp /> {seatedCount}/{totalCapacity}</StudentCount>
         </ClassInfo>
       </ModalTitle>
         

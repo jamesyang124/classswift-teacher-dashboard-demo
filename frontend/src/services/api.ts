@@ -32,5 +32,16 @@ export const apiService = {
     }
     
     return response.json();
+  },
+
+  async clearClassSeats(classId: string): Promise<APIResponse<any>> {
+    const response = await fetch(`${config.api.baseUrl}/classes/${classId}/clear-seats`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to clear class seats: ${response.statusText}`);
+    }
+    return response.json();
   }
 };

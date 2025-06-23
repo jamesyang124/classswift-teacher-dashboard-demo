@@ -51,6 +51,7 @@ func ClearSeatForClassByPublicID(db *gorm.DB, publicID string) (*model.Class, er
 	if err != nil {
 		return nil, err
 	}
+	// No WebSocket broadcast here; handler is responsible
 	return &class, nil
 }
 
