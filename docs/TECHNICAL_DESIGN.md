@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document contains the technical specifications and design patterns for the ClassSwift Teacher Dashboard application, including data structures, API design, and implementation details.
+This document contains the technical specifications and design patterns for the ClassSwift Teacher Dashboard application, including data structures, API design, and implementation details. Updated to reflect the completed multi-class enrollment system with normalized database schema and animation features.
 
 ## Data Structure & API Design
 
@@ -26,132 +26,61 @@ This document contains the technical specifications and design patterns for the 
 ### TypeScript Interfaces
 
 ```typescript
+// Frontend interfaces matching the multi-class enrollment system
 interface Student {
   id: number;
   name: string;
-  seatId: number; // Seat ID (1 to classroom capacity)
-  score: number; // 0-100 range, non-negative integers
+  seatNumber?: number; // NULL = not seated, 1-30 = seated
+  score: number; // 0-100 range, non-negative integers  
   isGuest: boolean;
-  sessionToken?: string; // For seat-based authentication
-  joinedAt: string;
+  classId?: string; // Current class context
+  enrolledAt?: string;
+  updatedAt?: string;
 }
 
-interface ClassData {
-  classId: string;
-  className: string;
+interface ClassInfo {
+  id: string;
+  publicId: string;
+  name: string;
   studentCount: number;
-  maxStudents: number; // Classroom capacity (max 30)
-  students: Student[];
-  guestSeats: number; // Number of guest/empty seats
-  qrCodeUrl: string; // Contains app redirect URL
-  joinLink: string; // App redirect URL that redirects to ClassSwift ViewSonic
-  redirectUrl: string; // https://www.classswift.viewsonic.io/
-  createdAt: string;
+  totalCapacity: number;
   isActive: boolean;
-  sessionId: string; // For session management
-}
-
-interface Group {
-  id: number;
-  students: Student[];
-}
-
-interface SessionToken {
-  studentId: number;
-  classId: string;
-  seatId: number;
-  joinedAt: string;
-  expiresAt: string;
+  joinLink?: string; // Computed by backend
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface WebSocketMessage {
-  type: 'STUDENT_JOINED' | 'STUDENT_LEFT' | 'SCORE_UPDATED' | 'CLASS_UPDATED' | 'SEAT_ASSIGNED';
+  type: 'STUDENT_JOINED' | 'STUDENT_LEFT' | 'CLASS_UPDATED' | 'SEAT_UPDATED';
   classId: string;
-  seatId?: number;
   data: any;
   timestamp: string;
+}
+
+interface APIResponse<T = any> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  errors?: string[];
 }
 ```
 
 ### Redux Store Structure
 
 ```typescript
-// Store Configuration
+// Current implementation uses four main slices for state management
 interface RootState {
-  class: ClassState;
-  ui: UIState;
-  students: StudentsState;
-  websocket: WebSocketState;
+  student: StudentState;     // Student data and seat assignments
+  websocket: WebSocketState; // Real-time connection management  
+  class: ClassState;        // Class information and metadata
 }
 
-interface ClassState {
-  classData: ClassData | null;
-  loading: boolean;
-  error: string | null;
-}
-
-interface UIState {
-  showJoinModal: boolean;
-  showStudentModal: boolean;
-  activeTab: 'student' | 'group';
-  showMenu: boolean;
-}
-
-interface StudentsState {
-  students: Student[];
-  groups: Group[];
-  scoreHistory: ScoreAction[];
-  seatAssignments: { [seatId: number]: Student | null }; // Seat-based mapping
-  guestSeats: number[]; // Array of guest seat IDs
-  scoresReset: boolean; // Track if scores were reset when panel opened
-}
-
-interface WebSocketState {
-  connected: boolean;
-  reconnecting: boolean;
-  error: string | null;
-  lastMessage: WebSocketMessage | null;
-}
-
-// Redux Actions
-const classSlice = createSlice({
-  name: 'class',
-  initialState,
-  reducers: {
-    setClassData: (state, action) => { /* ... */ },
-    setLoading: (state, action) => { /* ... */ },
-    setError: (state, action) => { /* ... */ }
-  }
-});
-
-const studentSlice = createSlice({
-  name: 'students',
-  initialState,
-  reducers: {
-    updateStudentPoints: (state, action) => { /* ... */ },
-    createGroups: (state, action) => { /* Auto-group enrolled students, then guest seats */ },
-    resetStudentData: (state) => { /* Reset to guest seats only */ },
-    assignStudentToSeat: (state, action) => { /* Seat-based assignment */ },
-    removeStudentFromSeat: (state, action) => { /* Convert to guest seat */ },
-    updateSeatAssignments: (state, action) => { /* Update seat mapping */ },
-    resetPointsToZero: (state) => { /* Menu system bulk operation */ },
-    freshSessionReset: (state) => { /* Complete session reset */ }
-  }
-});
-
-const websocketSlice = createSlice({
-  name: 'websocket',
-  initialState,
-  reducers: {
-    connectionEstablished: (state) => { state.connected = true; state.error = null; },
-    connectionLost: (state) => { state.connected = false; state.reconnecting = true; },
-    connectionError: (state, action) => { state.error = action.payload; state.connected = false; },
-    messageReceived: (state, action) => { state.lastMessage = action.payload; },
-    seatAssigned: (state, action) => { /* Handle seat assignment events */ },
-    seatReleased: (state, action) => { /* Handle seat release events */ },
-    clearError: (state) => { state.error = null; }
-  }
-});
+// Key features of the Redux implementation:
+// - Real-time priority system (WebSocket updates take precedence)
+// - Animation state management for seat transitions
+// - Multi-class context switching
+// - Score management with 0-100 range validation
+// - Seat assignment tracking with capacity limits (30 seats max)
 ```
 
 ### Styled-Components Theme
@@ -258,14 +187,25 @@ import (
     "time"
 )
 
-// Core Models - Updated for simplified 2-table schema
+// Core Models - Multi-class enrollment system with normalized schema
 type Student struct {
+    ID        uint      `json:"id" gorm:"primaryKey"`
+    Name      string    `json:"name" gorm:"not null"`
+    CreatedAt time.Time `json:"createdAt"`
+    UpdatedAt time.Time `json:"updatedAt"`
+}
+
+type ClassEnrollment struct {
     ID         uint      `json:"id" gorm:"primaryKey"`
-    Name       string    `json:"name" gorm:"not null"`
-    ClassID    *string   `json:"classId" gorm:"index"` // Nullable foreign key
-    SeatNumber *int      `json:"seatNumber"` // NULL = not seated, value = seated
-    CreatedAt  time.Time `json:"createdAt"`
+    StudentID  uint      `json:"studentId" gorm:"not null;index"`
+    ClassID    string    `json:"classId" gorm:"not null;index"`
+    SeatNumber *int      `json:"seatNumber"` // NULL = not seated, 1-30 = seated
+    EnrolledAt time.Time `json:"enrolledAt" gorm:"default:CURRENT_TIMESTAMP"`
     UpdatedAt  time.Time `json:"updatedAt"`
+    
+    // Foreign key relationships
+    Student Student `json:"student" gorm:"foreignKey:StudentID"`
+    Class   Class   `json:"class" gorm:"foreignKey:ClassID"`
 }
 
 type Class struct {
@@ -277,6 +217,16 @@ type Class struct {
     IsActive     bool      `json:"isActive" gorm:"default:true"`
     CreatedAt    time.Time `json:"createdAt"`
     UpdatedAt    time.Time `json:"updatedAt"`
+}
+
+// StudentWithEnrollment represents student data with enrollment context
+type StudentWithEnrollment struct {
+    ID         uint      `json:"id"`
+    Name       string    `json:"name"`
+    ClassID    string    `json:"classId"`
+    SeatNumber *int      `json:"seatNumber"`
+    EnrolledAt time.Time `json:"enrolledAt"`
+    UpdatedAt  time.Time `json:"updatedAt"`
 }
 
 // Response-only struct for API responses with computed fields
@@ -305,11 +255,13 @@ type WebSocketMessage struct {
 ### API Routes & Request/Response Definitions
 
 ```
-// API Endpoints
+// API Endpoints - Multi-class enrollment system
+GET    /api/v1/classes                   - Get all classes list
 GET    /api/v1/classes/:classId          - Get class information with students
-GET    /api/v1/classes/:classId/students - Get students in class
+GET    /api/v1/classes/:classId/students - Get students enrolled in class
 GET    /api/v1/classes/:classId/qr       - Get QR code and join link
 GET    /api/v1/classes/:classId/join     - QR code join endpoint (redirects)
+POST   /api/v1/classes/:classId/reset-seats - Reset all seated students to null
 ```
 
 **API Request/Response Examples:**
@@ -332,8 +284,26 @@ GET    /api/v1/classes/:classId/join     - QR code join endpoint (redirects)
   }
 }
 
-// GET /api/v1/classes/X58E9647/students
+// GET /api/v1/classes
 // Response:
+{
+  "success": true,
+  "data": [
+    {
+      "id": "class-1",
+      "publicId": "X58E9647",
+      "name": "302 Science",
+      "studentCount": 16,
+      "totalCapacity": 30,
+      "isActive": true,
+      "createdAt": "2025-06-21T10:15:00Z",
+      "updatedAt": "2025-06-21T10:15:00Z"
+    }
+  ]
+}
+
+// GET /api/v1/classes/X58E9647/students
+// Response with multi-class enrollment data:
 {
   "success": true,
   "data": [
@@ -341,8 +311,8 @@ GET    /api/v1/classes/:classId/join     - QR code join endpoint (redirects)
       "id": 1,
       "name": "Philip",
       "classId": "class-1",
-      "seatNumber": 1,
-      "createdAt": "2025-06-21T10:15:00Z",
+      "seatNumber": 15,
+      "enrolledAt": "2025-06-21T10:15:00Z",
       "updatedAt": "2025-06-21T10:15:00Z"
     },
     {
@@ -350,15 +320,15 @@ GET    /api/v1/classes/:classId/join     - QR code join endpoint (redirects)
       "name": "Alice",
       "classId": "class-1",
       "seatNumber": null,
-      "createdAt": "2025-06-21T10:20:00Z",
+      "enrolledAt": "2025-06-21T10:20:00Z",
       "updatedAt": "2025-06-21T10:20:00Z"
     },
     {
-      "id": 5,
-      "name": "Guest",
+      "id": 12,
+      "name": "Michael",
       "classId": "class-1",
-      "seatNumber": 4,
-      "createdAt": "2025-06-21T10:25:00Z",
+      "seatNumber": 7,
+      "enrolledAt": "2025-06-21T10:25:00Z",
       "updatedAt": "2025-06-21T10:25:00Z"
     }
   ]
@@ -390,10 +360,10 @@ GET    /api/v1/classes/:classId/join     - QR code join endpoint (redirects)
 
 ```sql
 -- PostgreSQL Database Schema for ClassSwift Teacher Dashboard
--- Simplified schema based on client-side group management
+-- Multi-class enrollment system with normalized schema
 
 -- Classes Table: Core classroom entities
-CREATE TABLE classes (
+CREATE TABLE IF NOT EXISTS classes (
     id VARCHAR(255) PRIMARY KEY,                    -- Internal unique class identifier
     public_id VARCHAR(255) UNIQUE NOT NULL,        -- Public class identifier for QR codes (e.g., "X58E9647")
     name VARCHAR(255) NOT NULL,                     -- Human-readable class name (e.g., "302 Science")
@@ -407,38 +377,53 @@ CREATE TABLE classes (
     CONSTRAINT chk_student_count_valid CHECK (student_count >= 0 AND student_count <= total_capacity)
 );
 
--- Students Table: Student records with current class assignment
-CREATE TABLE students (
+-- Students Table: Student records (independent of classes)
+CREATE TABLE IF NOT EXISTS students (
     id SERIAL PRIMARY KEY,                         -- Auto-incrementing student ID
     name VARCHAR(255) NOT NULL,                    -- Full student name
-    class_id VARCHAR(255),                         -- Current class (nullable)
-    seat_number INTEGER,                          -- Physical seat number (NULL = not seated)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    CONSTRAINT chk_name_not_empty CHECK (LENGTH(TRIM(name)) > 0),
-    CONSTRAINT fk_students_class FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE SET NULL,
-    CONSTRAINT chk_seat_number_positive CHECK (seat_number IS NULL OR seat_number > 0)
+    CONSTRAINT chk_name_not_empty CHECK (LENGTH(TRIM(name)) > 0)
+);
+
+-- Class Enrollments Table: Many-to-many relationship with seat assignments
+CREATE TABLE IF NOT EXISTS class_enrollments (
+    id SERIAL PRIMARY KEY,                         -- Auto-incrementing enrollment ID
+    student_id INTEGER NOT NULL,                   -- Reference to student
+    class_id VARCHAR(255) NOT NULL,               -- Reference to class
+    seat_number INTEGER,                          -- Physical seat number (NULL = not seated, 1-30 = seated)
+    enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_enrollment_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+    CONSTRAINT fk_enrollment_class FOREIGN KEY (class_id) REFERENCES classes(id) ON DELETE CASCADE,
+    CONSTRAINT chk_seat_number_positive CHECK (seat_number IS NULL OR seat_number > 0),
+    CONSTRAINT unique_student_class UNIQUE (student_id, class_id),
+    CONSTRAINT unique_seat_per_class UNIQUE (class_id, seat_number)
 );
 
 -- Indexes for Performance Optimization
-CREATE INDEX idx_classes_public_id ON classes(public_id);
-CREATE INDEX idx_students_class_id ON students(class_id);
+CREATE INDEX IF NOT EXISTS idx_classes_public_id ON classes(public_id);
+CREATE INDEX IF NOT EXISTS idx_enrollments_student_id ON class_enrollments(student_id);
+CREATE INDEX IF NOT EXISTS idx_enrollments_class_id ON class_enrollments(class_id);
+CREATE INDEX IF NOT EXISTS idx_enrollments_seat_number ON class_enrollments(class_id, seat_number);
 
 -- Views for Common Queries
-CREATE VIEW class_students_view AS
+CREATE OR REPLACE VIEW class_students_view AS
 SELECT 
     s.id as student_id,
     s.name as student_name,
-    s.class_id,
+    ce.class_id,
     c.name as class_name,
     c.public_id,
-    s.seat_number,
-    s.created_at,
-    s.updated_at,
-    CASE WHEN s.seat_number IS NOT NULL THEN true ELSE false END as is_seated
+    ce.seat_number,
+    ce.enrolled_at,
+    ce.updated_at,
+    CASE WHEN ce.seat_number IS NOT NULL THEN true ELSE false END as is_seated
 FROM students s
-LEFT JOIN classes c ON s.class_id = c.id;
+INNER JOIN class_enrollments ce ON s.id = ce.student_id
+LEFT JOIN classes c ON ce.class_id = c.id;
 
 CREATE VIEW class_summary AS
 SELECT 
@@ -503,58 +488,13 @@ CREATE TRIGGER trigger_students_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- Sample Data for Development
-INSERT INTO classes (id, public_id, name, total_capacity) VALUES 
-('class-1', 'X58E9647', '302 Science', 30);
-
-INSERT INTO students (name, class_id, seat_number) VALUES 
-('Philip', 'class-1', 1),
-('Darrell', 'class-1', 2),
-('Cody', 'class-1', 3),
-('Alice', 'class-1', NULL), -- Student in class but not seated
-('Guest', 'class-1', 4);
+-- Sample schema supports multi-class enrollment with normalized relationships
+-- Migration script contains comprehensive test data with realistic enrollment patterns
 ```
 
-### Frontend TypeScript Interfaces
+### Frontend Implementation Notes
 
-```typescript
-// Updated TypeScript Interfaces for simplified schema
-
-interface APIResponse<T = any> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  errors?: string[];
-}
-
-interface Student {
-  id: number;
-  name: string;
-  classId?: string;
-  seatNumber?: number; // NULL = not seated, value = seated at that position
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface ClassData {
-  id: string;
-  publicId: string;
-  name: string;
-  studentCount: number;
-  totalCapacity: number;
-  isActive: boolean;
-  joinLink: string; // Computed by backend
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface WebSocketMessage {
-  type: 'STUDENT_JOINED' | 'STUDENT_LEFT' | 'CLASS_UPDATED';
-  classId: string;
-  data: any;
-  timestamp: string;
-}
-```
+The TypeScript interfaces above are used throughout the React application to ensure type safety and consistency with the backend API responses. The multi-class enrollment system allows students to be enrolled in multiple classes simultaneously, with each enrollment having independent seat assignments.
 
 ### Component Integration Example
 

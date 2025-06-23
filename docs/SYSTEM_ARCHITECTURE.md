@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the high-level system architecture for the ClassSwift Teacher Dashboard, a comprehensive classroom management system.
+This document outlines the high-level system architecture for the ClassSwift Teacher Dashboard, a comprehensive classroom management system. Updated to reflect the completed multi-class enrollment system and real-time animation features.
 
 ## Technical Architecture
 
@@ -66,28 +66,55 @@ This document outlines the high-level system architecture for the ClassSwift Tea
 ## System Components
 
 ```
-System Architecture
-├── Frontend (React)
-│   ├── Components (Seat-based UI)
-│   ├── Redux Store (Seat assignments)
-│   ├── WebSocket Service (Seat messaging)
-│   ├── Local Storage (Session tokens)
-│   └── Styled Components
-├── Backend (Go Gin)
-│   ├── Seat Authentication API
-│   ├── Session Token Management
-│   ├── WebSocket Hub (Seat assignments)
-│   ├── JWT Middleware
-│   └── Database ORM
-├── Database (PostgreSQL)
-│   ├── Classes
-│   ├── Students (with seat assignments)
-│   ├── Seats (capacity management)
-│   ├── Session Tokens
-│   └── Groups
+System Architecture - Multi-Class Enrollment System
+├── Frontend (React 19.1 + TypeScript)
+│   ├── Pages
+│   │   ├── ClassList (real database integration)
+│   │   └── Dashboard (dual modal system)
+│   ├── Components
+│   │   ├── Modals (QR join + student management)
+│   │   ├── StudentGrid (30-seat capacity with animations)
+│   │   ├── StudentCard (score management 0-100)
+│   │   └── Navigation (tab switching)
+│   ├── Redux Store (RTK)
+│   │   ├── studentSlice (seat assignments + scores)
+│   │   ├── websocketSlice (real-time updates)
+│   │   ├── uiSlice (modal states)
+│   │   └── classSlice (class metadata)
+│   ├── Hooks
+│   │   ├── useSeatUpdates (animation triggers)
+│   │   ├── useWebSocket (class-specific connections)
+│   │   └── useStudentData (multi-class context)
+│   └── Styled Components (theme + responsive design)
+├── Backend (Go Gin + GORM)
+│   ├── Handlers
+│   │   ├── classHandler (CRUD + class list)
+│   │   ├── studentHandler (enrollment management)
+│   │   └── websocketHandler (real-time broadcasting)
+│   ├── Services
+│   │   ├── classService (multi-class logic)
+│   │   ├── studentService (enrollment operations)
+│   │   └── websocketService (seat update events)
+│   ├── Models
+│   │   ├── Student (normalized, independent)
+│   │   ├── Class (metadata + capacity)
+│   │   └── ClassEnrollment (many-to-many + seats)
+│   └── Middleware (CORS + logging + recovery)
+├── Database (PostgreSQL 15)
+│   ├── classes (capacity + metadata)
+│   ├── students (profiles, independent of classes)
+│   ├── class_enrollments (many-to-many + seat numbers)
+│   ├── Constraints (unique seats per class)
+│   └── Indexes (performance optimization)
+├── Development Environment (Docker Compose)
+│   ├── Frontend Container (Vite HMR)
+│   ├── Backend Container (Go Air live reload)
+│   ├── Database Container (PostgreSQL + volumes)
+│   ├── Cache Container (Redis)
+│   └── Admin Container (Adminer)
 └── External Services
-    ├── QR Code API (Seat-specific)
-    └── Authentication Service
+    ├── QR Code Generation (class-specific redirects)
+    └── ClassSwift ViewSonic (authentication platform)
 ```
 
 ## Frontend Architecture
@@ -138,21 +165,21 @@ src/
 
 ## Database Design
 
-### Core Entities
-- **Classes** (classroom organization with capacity)
-- **Students** (student profiles with seat assignments and points)
-- **Seats** (physical seat management - ID 1 to capacity)
-- **Session Tokens** (seat-based authentication tokens)
-- **Groups** (auto-generated 5-student groups excluding guests)
-- **WebSocket Connections** (real-time seat assignment communication)
+### Core Entities - Multi-Class Enrollment System
+- **Classes** (classroom organization with capacity and metadata)
+- **Students** (student profiles independent of class assignments)
+- **Class Enrollments** (many-to-many relationship with seat assignments)
+- **Session Tokens** (authentication tokens for class access)
+- **Groups** (auto-generated groups from enrolled students)
+- **WebSocket Connections** (real-time updates per class context)
 
-### Key Relationships
-- Classes → Seats (one-to-many, based on classroom capacity)
-- Seats → Students (one-to-one per session, with session tokens)
-- Students ↔ Groups (many-to-many, enrolled students only)
-- Classes → Session Tokens (one-to-many, seat-specific)
-- Seats → QR Codes (one-to-one, seat-specific generation)
-- Classes ↔ WebSocket Connections (one-to-many for seat assignment updates)
+### Key Relationships - Normalized Schema
+- Students ↔ Classes (many-to-many through class_enrollments table)
+- Class Enrollments → Seat Numbers (randomized 1-30 or null assignments)
+- Classes → WebSocket Connections (real-time updates per class)
+- Students → Multiple Class Enrollments (80% multi-class enrollment rate)
+- Class Enrollments → Unique Constraints (one student per class, one seat per class)
+- Animation System → Real-time Priority (WebSocket updates take precedence)
 
 ## Security Architecture
 
@@ -182,9 +209,11 @@ src/
 
 ### Backend Optimization
 - Go Gin's high-performance HTTP handling
-- Database query optimization with GORM
-- Connection pooling
-- Efficient JSON serialization
+- Complex JOIN queries optimized for multi-class enrollment
+- GORM with foreign key constraints and unique indexes
+- WebSocket broadcasting for real-time seat assignments
+- Connection pooling and efficient JSON serialization
+- Animation state management with priority-based updates
 
 ## Deployment Architecture
 
