@@ -19,20 +19,20 @@ Empower educators with intuitive tools to manage classroom dynamics, track stude
 
 #### 1.1 Student Joining System (Left Modal)
 - **QR Code Display**:
-  - Teachers can generate and display a QR code for their class
-  - QR code provides instant access for students to join the class
+  - Teachers can generate and display a QR code containing application redirect URL
+  - QR code redirects students to https://www.classswift.viewsonic.io/ for authentication
   - High-quality visual display suitable for classroom projection
   - Code remains active throughout the class session
 - **Class Information Display**:
-  - Class Name: Must be clearly visible and editable by teacher
-  - Class ID: Must be easily copyable unique identifier (e.g., "X58E9647")
-  - Student Count: Must show real-time tracking format (current/maximum)
-  - Join Link: Must be backend-generated and easily shareable
+  - Class Name: Must be clearly visible and editable by teacher (truncated if exceeds 50% of modal width)
+  - Class ID: Must be easily copyable unique identifier (e.g., "X58E9647") with truncation if exceeds available width
+  - Student Count: Must show real-time tracking format (current/maximum, max 30 students)
+  - Join Link: Must be backend-generated redirect URL and easily shareable
   - Class Status: Must indicate if class is currently accepting students
 - **Student Access Methods**:
-  - Students scan QR code with mobile devices to join class instantly
-  - Alternative join link available for manual entry
-  - Class ID provided for backup access method
+  - Students scan QR code which redirects to ClassSwift ViewSonic platform
+  - Students complete authentication on external platform
+  - Students are redirected back to application with session tokens
   - Works with standard mobile camera apps and QR scanners
 - **Copy Functionality**:
   - Class ID Copy: One-click copy to clipboard
@@ -49,9 +49,8 @@ Empower educators with intuitive tools to manage classroom dynamics, track stude
   - Student name (for enrolled students) or "Guest" (for non-enrolled/empty seats)
   - Blue header background for enrolled students
   - Gray header background for guest seats
-  - Negative points (red badges)
-  - Positive points (green badges)
-  - Point management controls (+/- buttons)
+  - Single score display (0-100 range, non-negative integers)
+  - Score management controls (+/- buttons)
 - **Seat-based Authentication**:
   - Students scan QR codes at specific physical seats
   - Each seat has unique ID (1 to capacity) and can only be occupied by one student
@@ -63,20 +62,20 @@ Empower educators with intuitive tools to manage classroom dynamics, track stude
   - Multiple students can join simultaneously without conflicts
   - Live connection maintains current class state
 
-##### 1.2.2 Point Management System
-- **Point Types**:
-  - Positive Points: Green badges with + / - controls
-  - Negative Points: Red badges with + / - controls
-  - Zero Points: Gray badges when student has no points
+##### 1.2.2 Scoring System
+- **Score Display**:
+  - Single score value: 0-100 range (non-negative integers only)
+  - Blue badges for active students, gray for guests
+  - Scores reset to 0 when student panel opens
 - **Interactive Controls**: 
   - Click-based increment/decrement for each student
-  - Minus button disabled when student has 0 points
-  - Point changes apply immediately with visual feedback
-- **Point Constraints**:
-  - Minimum value of 0 points enforced
-  - No upper limit on positive points
-  - Color-coded badges for easy visual identification
-- **Session Persistence**: Points maintained during class session but reset on browser refresh
+  - Minus button disabled when student has 0 score
+  - Score changes apply immediately with visual feedback
+- **Score Constraints**:
+  - Minimum value of 0 enforced
+  - Maximum value of 100 enforced
+  - Always non-negative integers
+- **Session Persistence**: Scores reset when panel opens, maintained during session
 
 ##### 1.2.3 Group Management
 - **Auto-grouping**: 
@@ -86,7 +85,7 @@ Empower educators with intuitive tools to manage classroom dynamics, track stude
 - **Group Display**: 
   - Visual separation and organization of student groups
   - Same UI elements as student list (blue cards for enrolled, gray for guests)
-  - Point badges visible in group view
+  - Score badges visible in group view
 - **Group Management**:
   - Sequential group naming (Group 1, Group 2, Group 3, etc.)
   - Manual drag-and-drop between groups for adjustments
@@ -103,14 +102,16 @@ Empower educators with intuitive tools to manage classroom dynamics, track stude
 - **Menu System**:
   - Trigger: Three-dot menu button (...) in top-right corner
   - Dropdown Options: 
-    - Reset Points: Clear all student points to zero
-    - Fresh Session: Reset entire session (requires students to re-scan seat QR codes then classroom QR code)
+    - Reset Scores: UI display only (non-functional)
+    - Fresh Session: UI display only (non-functional)
   - Positioning: Right-aligned dropdown
   - Interaction: Click outside menu area closes dropdown without action
+  - Actions are UI-only for current implementation phase
 - **Modal Controls**:
-  - Close Functionality: X button to close modals
-  - Reset Behavior: Closing resets entire interface
-  - Persistence: Interface returns to original state after refresh
+  - Close Functionality: X button to close individual modals only
+  - Independent Closing: Closing left modal only closes left modal, closing right modal only closes right modal
+  - No Navigation: Modal closing does not trigger navigation or page changes
+  - Background State: When no modals are open, display blank state or return to Class List view
 
 ### 2. User Interface & Experience Requirements
 
@@ -130,7 +131,7 @@ Empower educators with intuitive tools to manage classroom dynamics, track stude
 ##### 2.2.2 Right Modal - Student Management Interface
 - **Student Grid**: Real-time student list with seat assignments
 - **Live Updates**: Immediate updates when students join via QR code scanning
-- **Interactive Controls**: Point management and group formation tools
+- **Interactive Controls**: Score management and group formation tools
 - **Tab Navigation**: Switch between student list and group views
 
 ##### 2.2.3 Modal Interactions

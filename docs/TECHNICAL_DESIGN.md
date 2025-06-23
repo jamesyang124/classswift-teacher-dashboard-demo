@@ -30,8 +30,7 @@ interface Student {
   id: number;
   name: string;
   seatId: number; // Seat ID (1 to classroom capacity)
-  negativePoints: number;
-  positivePoints: number;
+  score: number; // 0-100 range, non-negative integers
   isGuest: boolean;
   sessionToken?: string; // For seat-based authentication
   joinedAt: string;
@@ -41,11 +40,12 @@ interface ClassData {
   classId: string;
   className: string;
   studentCount: number;
-  maxStudents: number; // Classroom capacity
+  maxStudents: number; // Classroom capacity (max 30)
   students: Student[];
   guestSeats: number; // Number of guest/empty seats
-  qrCodeUrl: string;
-  joinLink: string;
+  qrCodeUrl: string; // Contains app redirect URL
+  joinLink: string; // App redirect URL that redirects to ClassSwift ViewSonic
+  redirectUrl: string; // https://www.classswift.viewsonic.io/
   createdAt: string;
   isActive: boolean;
   sessionId: string; // For session management
@@ -65,7 +65,7 @@ interface SessionToken {
 }
 
 interface WebSocketMessage {
-  type: 'STUDENT_JOINED' | 'STUDENT_LEFT' | 'POINTS_UPDATED' | 'CLASS_UPDATED' | 'SEAT_ASSIGNED';
+  type: 'STUDENT_JOINED' | 'STUDENT_LEFT' | 'SCORE_UPDATED' | 'CLASS_UPDATED' | 'SEAT_ASSIGNED';
   classId: string;
   seatId?: number;
   data: any;
@@ -100,9 +100,10 @@ interface UIState {
 interface StudentsState {
   students: Student[];
   groups: Group[];
-  pointsHistory: PointsAction[];
+  scoreHistory: ScoreAction[];
   seatAssignments: { [seatId: number]: Student | null }; // Seat-based mapping
   guestSeats: number[]; // Array of guest seat IDs
+  scoresReset: boolean; // Track if scores were reset when panel opened
 }
 
 interface WebSocketState {
@@ -370,16 +371,19 @@ GET    /api/v1/classes/:classId/join     - QR code join endpoint (redirects)
   "data": {
     "qrCodeBase64": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
     "joinLink": "http://localhost:3000/api/v1/classes/X58E9647/join",
+    "redirectUrl": "https://www.classswift.viewsonic.io/",
     "classId": "X58E9647"
   }
 }
 
 // Note: joinLink is dynamically composed by backend as:
 // BASE_URL + "/api/v1/classes/" + publicId + "/join"
+// This joinLink is what appears in the QR code and redirects to ClassSwift ViewSonic
 
-// GET /api/v1/classes/X58E9647/join (QR scan endpoint)
+// GET /api/v1/classes/X58E9647/join (QR scan redirect endpoint)
 // Headers: X-Student-Name: "Alice" (optional, defaults to "Guest")
-// Response: 302 Redirect to https://www.classswift.viewsonic.io
+// Response: 302 Redirect to https://www.classswift.viewsonic.io/
+// Purpose: QR code contains this URL, which redirects students to ClassSwift ViewSonic platform
 ```
 
 ### Database Schema Design
