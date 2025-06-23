@@ -83,6 +83,7 @@ func GetClassStudents(c *gin.Context) {
 	})
 }
 
+
 // GetClassQRCode handles GET /api/v1/classes/:classId/qr
 func GetClassQRCode(c *gin.Context) {
 	db := database.GetDB()
@@ -201,6 +202,7 @@ func HandleStudentJoin(c *gin.Context) {
 			"totalCapacity":  class.TotalCapacity,
 			"enrolledCount":  enrolledCount,
 			"availableSlots": availableSlots,
+			"students":       students, // Include the full students list
 		}
 
 		service.BroadcastClassUpdate(class.PublicID, "class_updated", classUpdateData)

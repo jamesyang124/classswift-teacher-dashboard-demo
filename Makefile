@@ -1,15 +1,23 @@
-# ClassSwift Teacher Dashboard - Development Makefile
+# ClassSwift Teacher Dashboard - Makefile
 
-.PHONY: help dev up down logs clean backend-only frontend-only status be-integration-test be-unit-test be-e2e-test 
+.PHONY: help dev up down logs clean backend-only frontend-only status \
+        docker-build docker-build-prod
 
 # Default target
 help: ## Show available commands
 	@echo "ClassSwift Teacher Dashboard - Available Commands:"
 	@echo ""
-	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@echo "🚀 Development Commands:"
+	@grep -E '^(dev|up|down|logs|clean|backend-only|frontend-only|status):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@echo ""
+	@echo "🐳 Docker Commands:"
+	@grep -E '^(docker-.*):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
 
-# Core Commands
+# =============================================================================
+# Development Commands
+# =============================================================================
+
 dev: ## Start development environment with live reloading
 	@echo "🚀 Starting ClassSwift development environment..."
 	@echo "📁 Creating required directories..."
@@ -50,17 +58,15 @@ status: ## Show service status
 	@echo "📊 ClassSwift service status:"
 	docker-compose ps
 
-be-unit-test: ## Run all Go unit tests in the backend (excluding integration/e2e tests)
-	cd ./backend && go test -count=1 ./internal/... ./config/... ./pkg/... ./api/... ./cmd/...
+# =============================================================================
+# Docker Build Commands
+# =============================================================================
 
-be-integration-test: ## Run integration tests with test DB
-	docker-compose -f ./backend/tests/docker/docker-compose.test.yml up -d
-	sleep 3
-	cd ./backend && go test -count=1 ./tests/integration/...
-	docker-compose -f ./backend/tests/docker/docker-compose.test.yml down
+docker-build: ## Build Docker images for development
+	@echo "🐳 Building Docker images for development..."
+	docker-compose build
 
-be-e2e-test: ## Run e2e tests with test server
-	docker-compose -f ./backend/tests/docker/docker-compose.test.yml up -d
-	sleep 3
-	cd ./backend && go test -count=1 ./tests/e2e/...
-	docker-compose -f ./backend/tests/docker/docker-compose.test.yml down
+docker-build-prod: ## Build Docker images for production
+	@echo "🐳 Building Docker images for production..."
+	docker build -f frontend/Dockerfile -t classswift/frontend:latest ./frontend
+	docker build -f backend/Dockerfile -t classswift/backend:latest ./backend
