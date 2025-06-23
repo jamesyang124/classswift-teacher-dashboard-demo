@@ -11,7 +11,7 @@ import {
  } from '../../styles/components';
 import { IoPersonSharp } from "react-icons/io5";
 import { fetchClassInfoAndStudents } from '../../store/slices/classSlice';
-import { updateClassCapacity, updateStudents, clearAllPoints } from '../../store/slices/studentSlice';
+import { updateClassCapacity, updateStudents, clearAllScores } from '../../store/slices/studentSlice';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { useSeatUpdates } from '../../hooks/useSeatUpdates';
 import { clearClassSeats } from '../../store/slices/classSlice';
@@ -21,10 +21,9 @@ const ClassMgmtModal: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { classInfo, loading, error } = useSelector((state: RootState) => state.class);
   const { students, totalCapacity, availableSlots } = useSelector((state: RootState) => state.student);
-  const { lastMessage } = useSelector((state: RootState) => state.websocket);
 
   const [activeTab, setActiveTab] = useState<'student' | 'group'>('student');
-  const { connect, disconnect } = useWebSocket();
+  const { connect, disconnect, lastMessage } = useWebSocket();
   // useSeatUpdates should always be in sync with students from Redux
   const seatUpdates = useSeatUpdates();
   const { updateMultipleSeats, getSeatUpdate, hasAnimation, clearUpdates, syncWithInitialStudents } = seatUpdates;
@@ -44,12 +43,17 @@ const ClassMgmtModal: React.FC = () => {
   useEffect(() => {
     dispatch(fetchClassInfoAndStudents(classId));
     connect(classId);
+    // Only disconnect on component unmount, not on dependency changes
     return () => {
-      disconnect();
       clearUpdates();
       initialSyncRef.current = false; // Reset for next mount
+      // Note: WebSocket connection is maintained across re-renders for better UX
+      // Only explicitly disconnect when component is completely unmounted
     };
-  }, [dispatch, classId, connect, disconnect, clearUpdates]);
+  }, [dispatch, classId, connect, clearUpdates]); // Include all dependencies
+
+  // Note: WebSocket connection persists across modal open/close cycles
+  // Only disconnect when user explicitly leaves the class or app closes
 
   // Handle WebSocket messages with seat updates
   useEffect(() => {
@@ -77,8 +81,8 @@ const ClassMgmtModal: React.FC = () => {
     return id.toString().padStart(2, '0');
   };
 
-  const handleClearAllPoints = () => {
-    dispatch(clearAllPoints());
+  const handleClearAllScores = () => {
+    dispatch(clearAllScores());
   };
 
   // Replace handleResetAllSeats to use the async thunk for backend reset
@@ -129,7 +133,7 @@ const ClassMgmtModal: React.FC = () => {
       <TabNavigation 
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        onClearAllPoints={handleClearAllPoints}
+        onClearAllScores={handleClearAllScores}
         onResetAllSeats={handleResetAllSeats}
       />
 

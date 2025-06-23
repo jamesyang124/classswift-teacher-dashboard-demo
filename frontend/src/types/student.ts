@@ -5,7 +5,7 @@ export interface Student {
   seatNumber?: number;
   createdAt: string;
   updatedAt: string;
-  points: number;
+  score: number;
   isGuest: boolean;
 }
 

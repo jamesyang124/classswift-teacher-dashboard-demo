@@ -5,14 +5,14 @@ import { StyledTabNavigation, StyledTab, StyledMenuContainer, StyledMenuButton, 
 interface TabNavigationProps {
   activeTab: 'student' | 'group';
   onTabChange: (tab: 'student' | 'group') => void;
-  onClearAllPoints: () => void;
+  onClearAllScores: () => void;
   onResetAllSeats: () => void;
 }
 
 export const TabNavigation: React.FC<TabNavigationProps> = ({ 
   activeTab, 
   onTabChange, 
-  onClearAllPoints, 
+  onClearAllScores, 
   onResetAllSeats 
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -39,8 +39,8 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
     setIsMenuOpen(!isMenuOpen);
   };
 
-  const handleClearAllPoints = () => {
-    onClearAllPoints();
+  const handleClearAllScores = () => {
+    onClearAllScores();
     setIsMenuOpen(false);
   };
 
@@ -69,8 +69,8 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
         </StyledMenuButton>
         {isMenuOpen && (
           <StyledDropdownMenu>
-            <StyledDropdownItem onClick={handleClearAllPoints}>
-              Clear All Points
+            <StyledDropdownItem onClick={handleClearAllScores}>
+              Clear All Scores
             </StyledDropdownItem>
             <StyledDropdownItem onClick={handleResetAllSeats}>
               Reset All Seats

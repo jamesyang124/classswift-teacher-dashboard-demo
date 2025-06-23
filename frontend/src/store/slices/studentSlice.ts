@@ -29,10 +29,10 @@ export const fetchClassStudents = createAsyncThunk(
       throw new Error('Invalid response: missing student data');
     }
     
-    // Transform backend students to frontend students with points and isGuest
+    // Transform backend students to frontend students with score and isGuest
     const students = response.data.students.map(student => ({
       ...student,
-      points: 0, // Initialize points to 0
+      score: 0, // Initialize score to 0
       isGuest: false // All enrolled students are not guests
     }));
     
@@ -49,11 +49,11 @@ const studentSlice = createSlice({
   name: 'student',
   initialState,
   reducers: {
-    updateStudentPoints: (state, action: PayloadAction<{ studentId: number; change: number }>) => {
+    updateStudentScore: (state, action: PayloadAction<{ studentId: number; change: number }>) => {
       const { studentId, change } = action.payload;
       const student = state.students.find(s => s.id === studentId);
       if (student && !student.isGuest) {
-        student.points = Math.max(0, student.points + change);
+        student.score = Math.max(0, Math.min(100, student.score + change));
       }
     },
     clearStudents: (state) => {
@@ -73,23 +73,23 @@ const studentSlice = createSlice({
       state.availableSlots = action.payload.availableSlots;
     },
     updateStudents: (state, action: PayloadAction<Student[]>) => {
-      // Preserve existing points when updating students from WebSocket
-      const existingPointsMap = new Map(
-        state.students.map(student => [student.id, student.points])
+      // Preserve existing scores when updating students from WebSocket
+      const existingScoresMap = new Map(
+        state.students.map(student => [student.id, student.score])
       );
       
       state.students = action.payload.map(student => ({
         ...student,
-        points: existingPointsMap.get(student.id) ?? 0, // Preserve existing points or default to 0
+        score: existingScoresMap.get(student.id) ?? 0, // Preserve existing scores or default to 0
         isGuest: false // All enrolled students are not guests
       }));
       state.enrolledCount = action.payload.length;
     },
-    clearAllPoints: (state) => {
-      // Reset all student points to 0
+    clearAllScores: (state) => {
+      // Reset all student scores to 0
       state.students.forEach(student => {
         if (!student.isGuest) {
-          student.points = 0;
+          student.score = 0;
         }
       });
     },
@@ -120,5 +120,5 @@ const studentSlice = createSlice({
   },
 });
 
-export const { updateStudentPoints, clearStudents, setError, updateClassCapacity, updateStudents, clearAllPoints, resetAllSeats } = studentSlice.actions;
+export const { updateStudentScore, clearStudents, setError, updateClassCapacity, updateStudents, clearAllScores, resetAllSeats } = studentSlice.actions;
 export default studentSlice.reducer;

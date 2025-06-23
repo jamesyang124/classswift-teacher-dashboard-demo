@@ -15,6 +15,9 @@ export interface WebSocketState {
   lastMessage: WebSocketMessage | null;
   error: string | null;
   classId: string | null;
+  reconnectAttempts: number;
+  lastHeartbeat: number | null;
+  shouldReconnect: boolean;
 }
 
 const initialState: WebSocketState = {
@@ -24,6 +27,9 @@ const initialState: WebSocketState = {
   lastMessage: null,
   error: null,
   classId: null,
+  reconnectAttempts: 0,
+  lastHeartbeat: null,
+  shouldReconnect: true,
 };
 
 const websocketSlice = createSlice({
@@ -44,14 +50,18 @@ const websocketSlice = createSlice({
       state.isConnected = true;
       state.isConnecting = false;
       state.error = null;
+      state.reconnectAttempts = 0;
+      state.lastHeartbeat = Date.now();
     },
     connectError: (state, action: PayloadAction<string>) => {
       state.connection = null;
       state.isConnected = false;
       state.isConnecting = false;
       state.error = action.payload;
+      state.reconnectAttempts += 1;
     },
     disconnect: (state) => {
+      state.shouldReconnect = false;
       if (state.connection) {
         state.connection.close();
       }
@@ -60,6 +70,14 @@ const websocketSlice = createSlice({
       state.isConnecting = false;
       state.classId = null;
       state.error = null;
+      state.reconnectAttempts = 0;
+      state.lastHeartbeat = null;
+    },
+    heartbeatReceived: (state) => {
+      state.lastHeartbeat = Date.now();
+    },
+    resetReconnectAttempts: (state) => {
+      state.reconnectAttempts = 0;
     },
     messageReceived: (state, action: PayloadAction<WebSocketMessage>) => {
       state.lastMessage = action.payload;
@@ -77,6 +95,8 @@ export const {
   disconnect,
   messageReceived,
   clearLastMessage,
+  heartbeatReceived,
+  resetReconnectAttempts,
 } = websocketSlice.actions;
 
 export default websocketSlice.reducer;

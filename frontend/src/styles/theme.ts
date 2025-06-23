@@ -3,10 +3,10 @@ import type { ThemeType } from './theme.types';
 // Theme configuration based on UI/UX design specifications
 export const theme: ThemeType = {
   colors: {
-    primary: '#3B82F6',        // Primary Blue for active elements
-    success: '#10B981',        // Success Green for positive points
-    danger: '#EF4444',         // Warning Red for negative points
-    neutral: '#9CA3AF',        // Neutral Gray for inactive elements
+    primary: '#3B82F6',        // Primary Blue for active students, score badges, active tabs
+    success: '#10B981',        // Success Green (legacy, kept for compatibility)
+    danger: '#EF4444',         // Warning Red (legacy, kept for compatibility)
+    neutral: '#9CA3AF',        // Neutral Gray for inactive elements, guest students, zero scores
     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', // Background gradient
     white: '#FFFFFF',
     black: '#000000',

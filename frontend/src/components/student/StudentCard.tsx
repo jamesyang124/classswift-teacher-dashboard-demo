@@ -3,23 +3,23 @@ import {
   StyledStudentCard,
   StyledSeatHeader,
   StyledStudentName,
-  StyledPointsContainer,
-  StyledPointsBadge,
-  StyledPointsButton,
+  StyledScoreContainer,
+  StyledScoreBadge,
+  StyledScoreButton,
   StyledGuestOverlay
 } from '../../styles/components';
 import type { Student } from '../../types/student';
 
 interface StudentCardProps {
   student: Student;
-  onUpdatePoints: (studentId: number, change: number) => void;
+  onUpdateScore: (studentId: number, change: number) => void;
   formatSeatNumber: (seatNumber: number) => string;
   hasRealtimeUpdate?: boolean;
 }
 
 export const StudentCard: React.FC<StudentCardProps> = ({ 
   student, 
-  onUpdatePoints, 
+  onUpdateScore, 
   formatSeatNumber,
   hasRealtimeUpdate = false
 }) => {
@@ -40,28 +40,28 @@ export const StudentCard: React.FC<StudentCardProps> = ({
       <StyledStudentName $isGuest={student.isGuest}>
         {student.name}
       </StyledStudentName>
-      <StyledPointsContainer>
-        <StyledPointsButton 
+      <StyledScoreContainer>
+        <StyledScoreButton 
           $type="decrease" 
-          $disabled={student.isGuest || student.points <= 0}
-          disabled={student.isGuest || student.points <= 0}
-          onClick={() => !student.isGuest && student.points > 0 && onUpdatePoints(student.id, -1)}
+          $disabled={student.isGuest || student.score <= 0}
+          disabled={student.isGuest || student.score <= 0}
+          onClick={() => !student.isGuest && student.score > 0 && onUpdateScore(student.id, -1)}
         >
           -1
-        </StyledPointsButton>
-        <StyledPointsBadge $points={student.points} $isGuest={student.isGuest}>
-          {student.points}
-        </StyledPointsBadge>
-        <StyledPointsButton 
+        </StyledScoreButton>
+        <StyledScoreBadge $score={student.score} $isGuest={student.isGuest}>
+          {student.score}
+        </StyledScoreBadge>
+        <StyledScoreButton 
           $type="increase" 
-          $disabled={student.isGuest}
-          disabled={student.isGuest}
-          onClick={() => !student.isGuest && onUpdatePoints(student.id, 1)}
+          $disabled={student.isGuest || student.score >= 100}
+          disabled={student.isGuest || student.score >= 100}
+          onClick={() => !student.isGuest && student.score < 100 && onUpdateScore(student.id, 1)}
         >
           +1
-        </StyledPointsButton>
+        </StyledScoreButton>
         {student.isGuest && <StyledGuestOverlay />}
-      </StyledPointsContainer>
+      </StyledScoreContainer>
     </StyledStudentCard>
   );
 };

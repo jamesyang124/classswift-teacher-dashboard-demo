@@ -37,6 +37,7 @@ export const StyledInfoLabel = styled.div`
   overflow: hidden;
   text-overflow: ellipsis;
   flex-shrink: 1;
+  max-width: 14ch; /* Limit ID to 14 characters, truncate with ellipsis if longer */
 `;
 
 export const StyledModalTitle = styled.h2`
@@ -44,8 +45,12 @@ export const StyledModalTitle = styled.h2`
   font-weight: ${props => props.theme.typography.weights.bold};
   color: #374151;
   text-align: left;
-  padding: ${props => props.theme.spacing.lg};
+  padding: 0;
+  padding-left: ${props => props.theme.spacing.lg};
   margin: 0;
-  padding-top: 0;
   padding-bottom: 10px;
+  max-width: 50%; /* Limit classroom name to 50% of modal width */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;

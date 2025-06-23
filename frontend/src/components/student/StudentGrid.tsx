@@ -2,7 +2,7 @@ import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { StyledStudentGrid, StyledScrollContainer } from '../../styles/components';
 import { StudentCard } from './StudentCard';
-import { updateStudentPoints } from '../../store/slices/studentSlice';
+import { updateStudentScore } from '../../store/slices/studentSlice';
 import type { RootState, AppDispatch } from '../../store';
 import type { Student } from '../../types/student';
 
@@ -20,8 +20,8 @@ export const StudentGrid: React.FC<StudentGridProps> = ({
   const dispatch = useDispatch<AppDispatch>();
   const { students, totalCapacity, loading, error } = useSelector((state: RootState) => state.student);
 
-  const handleUpdatePoints = (studentId: number, change: number) => {
-    dispatch(updateStudentPoints({ studentId, change }));
+  const handleUpdateScore = (studentId: number, change: number) => {
+    dispatch(updateStudentScore({ studentId, change }));
   };
 
   // Create a map of seat number to student
@@ -37,11 +37,11 @@ export const StudentGrid: React.FC<StudentGridProps> = ({
   const generateGridSlots = () => {
     const slots = [];
     for (let seatNumber = 1; seatNumber <= totalCapacity; seatNumber++) {
-      // Check for real-time seat updates first, but prefer Redux store for points
+      // Check for real-time seat updates first, but prefer Redux store for scores
       const seatUpdate = getSeatUpdate(seatNumber);
       const reduxStudent = seatMap.get(seatNumber);
       
-      // Use Redux student if available (for up-to-date points), otherwise use seat update
+      // Use Redux student if available (for up-to-date scores), otherwise use seat update
       const student = reduxStudent || seatUpdate;
       
       if (student && !student.isGuest) {
@@ -50,7 +50,7 @@ export const StudentGrid: React.FC<StudentGridProps> = ({
           <StudentCard 
             key={`sle-${seatNumber}`}
             student={student}
-            onUpdatePoints={handleUpdatePoints}
+            onUpdateScore={handleUpdateScore}
             formatSeatNumber={formatSeatNumber}
             hasRealtimeUpdate={hasAnimation(seatNumber)}
           />
@@ -64,14 +64,14 @@ export const StudentGrid: React.FC<StudentGridProps> = ({
           seatNumber: seatNumber,
           createdAt: '',
           updatedAt: '',
-          points: 0,
+          score: 0,
           isGuest: true // Use isGuest to indicate empty seat
         };
         slots.push(
           <StudentCard 
             key={`sls-${seatNumber}`}
             student={emptyStudent}
-            onUpdatePoints={() => {}} // No action for empty seats
+            onUpdateScore={() => {}} // No action for empty seats
             formatSeatNumber={formatSeatNumber}
             hasRealtimeUpdate={false}
           />

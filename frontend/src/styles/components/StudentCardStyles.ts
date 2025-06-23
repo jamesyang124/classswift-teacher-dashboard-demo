@@ -42,6 +42,10 @@ export const StyledStudentName = styled.div<{ $isGuest: boolean }>`
   justify-content: center;
   border-bottom: 2px solid ${props => props.$isGuest ? '#9CA3AF' : '#3B82F6'};
   position: relative;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
   
   &::after {
     content: '';
@@ -55,7 +59,7 @@ export const StyledStudentName = styled.div<{ $isGuest: boolean }>`
   }
 `;
 
-export const StyledPointsContainer = styled.div`
+export const StyledScoreContainer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
@@ -64,7 +68,7 @@ export const StyledPointsContainer = styled.div`
   position: relative;
 `;
 
-export const StyledPointsBadge = styled.div<{ $points: number; $isGuest: boolean }>`
+export const StyledScoreBadge = styled.div<{ $score: number; $isGuest: boolean }>`
   display: flex;
   align-items: center;
   justify-content: center;
@@ -78,7 +82,7 @@ export const StyledPointsBadge = styled.div<{ $points: number; $isGuest: boolean
   height: 18px;
 `;
 
-export const StyledPointsButton = styled.button<{ $type: 'increase' | 'decrease'; $disabled?: boolean }>`
+export const StyledScoreButton = styled.button<{ $type: 'increase' | 'decrease'; $disabled?: boolean }>`
   background: ${props =>
     props.$disabled ? props.theme.colors.gray[200] :
       props.$type === 'increase' ? props.theme.colors.success :
