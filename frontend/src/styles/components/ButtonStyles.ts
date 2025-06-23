@@ -86,6 +86,12 @@ export const StyledBackButton = styled.button`
   padding: 0;
 `;
 
+export const StyledMenuContainer = styled.div`
+  position: relative;
+  margin-left: auto;
+  margin-right: 30px;
+`;
+
 export const StyledMenuButton = styled.button`
   background: none;
   border: none;
@@ -99,8 +105,6 @@ export const StyledMenuButton = styled.button`
   justify-content: center;
   border-radius: ${props => props.theme.borderRadius.sm};
   transition: all 0.2s ease;
-  margin-left: auto;
-  margin-right: 30px;
 
   &:focus {
     outline: none;
@@ -110,5 +114,48 @@ export const StyledMenuButton = styled.button`
   &:hover {
     background: ${props => props.theme.colors.gray[100]};
     color: ${props => props.theme.colors.gray[600]};
+  }
+`;
+
+export const StyledDropdownMenu = styled.div`
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: ${props => props.theme.colors.white};
+  border: 1px solid ${props => props.theme.colors.gray[200]};
+  border-radius: ${props => props.theme.borderRadius.md};
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  min-width: 160px;
+  margin-top: 4px;
+`;
+
+export const StyledDropdownItem = styled.button`
+  width: 100%;
+  background: none;
+  border: none;
+  outline: none;
+  padding: 12px 16px;
+  text-align: left;
+  font-size: ${props => props.theme.typography.sizes.body};
+  color: ${props => props.theme.colors.gray[700]};
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  
+  &:first-child {
+    border-radius: ${props => props.theme.borderRadius.md} ${props => props.theme.borderRadius.md} 0 0;
+  }
+  
+  &:last-child {
+    border-radius: 0 0 ${props => props.theme.borderRadius.md} ${props => props.theme.borderRadius.md};
+  }
+  
+  &:hover {
+    background: ${props => props.theme.colors.gray[100]};
+  }
+  
+  &:focus {
+    outline: none;
+    background: ${props => props.theme.colors.gray[200]};
   }
 `;

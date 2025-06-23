@@ -85,6 +85,20 @@ const studentSlice = createSlice({
       }));
       state.enrolledCount = action.payload.length;
     },
+    clearAllPoints: (state) => {
+      // Reset all student points to 0
+      state.students.forEach(student => {
+        if (!student.isGuest) {
+          student.points = 0;
+        }
+      });
+    },
+    resetAllSeats: (state) => {
+      // Clear all students and reset to initial guest state
+      state.students = [];
+      state.enrolledCount = 0;
+      state.availableSlots = state.totalCapacity;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -106,5 +120,5 @@ const studentSlice = createSlice({
   },
 });
 
-export const { updateStudentPoints, clearStudents, setError, updateClassCapacity, updateStudents } = studentSlice.actions;
+export const { updateStudentPoints, clearStudents, setError, updateClassCapacity, updateStudents, clearAllPoints, resetAllSeats } = studentSlice.actions;
 export default studentSlice.reducer;

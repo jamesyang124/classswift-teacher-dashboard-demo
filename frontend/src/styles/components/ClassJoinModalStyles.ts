@@ -3,8 +3,9 @@ import styled from 'styled-components';
 export const StyledVersionInfo = styled.div`
   text-align: center;
   padding: ${props => props.theme.spacing.md};
-  font-size: ${props => props.theme.typography.sizes.caption};
-  color: ${props => props.theme.colors.gray[400]};
+  font-size: 11px;
+  font-family: ${props => props.theme.typography.fontFamily};
+  color: ${props => props.theme.colors.gray[500]};
 `;
 
 export const StyledInfoRowHorizontal = styled.div`

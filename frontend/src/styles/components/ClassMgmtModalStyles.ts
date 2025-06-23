@@ -16,8 +16,9 @@ export const StyledTab = styled.button<{ $active: boolean }>`
   border: none;
   outline: none;
   padding: ${props => props.theme.spacing.md} ${props => props.theme.spacing.lg};
-  font-size: ${props => props.theme.typography.sizes.button};
+  font-size: 14px;
   font-weight: ${props => props.theme.typography.weights.medium};
+  font-family: ${props => props.theme.typography.fontFamily};
   color: ${props => props.$active ? props.theme.colors.primary : props.theme.colors.gray[500]};
   cursor: pointer;
   border-top-left-radius: 5px;

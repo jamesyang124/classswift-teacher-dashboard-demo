@@ -11,7 +11,7 @@ import {
  } from '../../styles/components';
 import { IoPersonSharp } from "react-icons/io5";
 import { fetchClassInfoAndStudents } from '../../store/slices/classSlice';
-import { updateClassCapacity, updateStudents } from '../../store/slices/studentSlice';
+import { updateClassCapacity, updateStudents, clearAllPoints, resetAllSeats } from '../../store/slices/studentSlice';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { useSeatUpdates } from '../../hooks/useSeatUpdates';
 import type { RootState, AppDispatch } from '../../store';
@@ -76,6 +76,17 @@ const ClassMgmtModal: React.FC = () => {
     return id.toString().padStart(2, '0');
   };
 
+  const handleClearAllPoints = () => {
+    dispatch(clearAllPoints());
+  };
+
+  const handleResetAllSeats = () => {
+    dispatch(resetAllSeats());
+    // Also clear seat updates
+    clearUpdates();
+    initialSyncRef.current = false;
+  };
+
   const renderContent = () => {
     if (activeTab === 'group') {
       return (
@@ -112,6 +123,8 @@ const ClassMgmtModal: React.FC = () => {
       <TabNavigation 
         activeTab={activeTab}
         onTabChange={setActiveTab}
+        onClearAllPoints={handleClearAllPoints}
+        onResetAllSeats={handleResetAllSeats}
       />
 
       {renderContent()}

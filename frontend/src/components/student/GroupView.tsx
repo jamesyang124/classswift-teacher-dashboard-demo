@@ -100,7 +100,7 @@ export const GroupView: React.FC<GroupViewProps> = ({
           <StyledGroupStudents>
             {group.map((student) => (
               <StudentCard 
-                key={student.id} 
+                key={student.isGuest ? `gps-${student.seatNumber}` : `gpe-${student.id}`}
                 student={student}
                 onUpdatePoints={handleUpdatePoints}
                 formatSeatNumber={formatSeatNumber}

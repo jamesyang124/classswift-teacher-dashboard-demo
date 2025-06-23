@@ -1,13 +1,54 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { HiOutlineDotsVertical } from "react-icons/hi";
-import { StyledTabNavigation, StyledTab, StyledMenuButton } from '../../styles/components';
+import { StyledTabNavigation, StyledTab, StyledMenuContainer, StyledMenuButton, StyledDropdownMenu, StyledDropdownItem } from '../../styles/components';
 
 interface TabNavigationProps {
   activeTab: 'student' | 'group';
   onTabChange: (tab: 'student' | 'group') => void;
+  onClearAllPoints: () => void;
+  onResetAllSeats: () => void;
 }
 
-export const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabChange }) => {
+export const TabNavigation: React.FC<TabNavigationProps> = ({ 
+  activeTab, 
+  onTabChange, 
+  onClearAllPoints, 
+  onResetAllSeats 
+}) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Handle clicks outside the menu to close it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMenuOpen]);
+
+  const handleMenuToggle = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  const handleClearAllPoints = () => {
+    onClearAllPoints();
+    setIsMenuOpen(false);
+  };
+
+  const handleResetAllSeats = () => {
+    onResetAllSeats();
+    setIsMenuOpen(false);
+  };
+
   return (
     <StyledTabNavigation>
       <StyledTab 
@@ -22,9 +63,21 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({ activeTab, onTabCh
       >
         Group
       </StyledTab>
-      <StyledMenuButton>
-        <HiOutlineDotsVertical/>
-      </StyledMenuButton>
+      <StyledMenuContainer ref={menuRef}>
+        <StyledMenuButton onClick={handleMenuToggle}>
+          <HiOutlineDotsVertical/>
+        </StyledMenuButton>
+        {isMenuOpen && (
+          <StyledDropdownMenu>
+            <StyledDropdownItem onClick={handleClearAllPoints}>
+              Clear All Points
+            </StyledDropdownItem>
+            <StyledDropdownItem onClick={handleResetAllSeats}>
+              Reset All Seats
+            </StyledDropdownItem>
+          </StyledDropdownMenu>
+        )}
+      </StyledMenuContainer>
     </StyledTabNavigation>
   );
 };

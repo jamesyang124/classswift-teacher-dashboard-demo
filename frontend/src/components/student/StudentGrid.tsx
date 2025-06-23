@@ -48,7 +48,7 @@ export const StudentGrid: React.FC<StudentGridProps> = ({
         // Seated student (either from store or real-time update)
         slots.push(
           <StudentCard 
-            key={`seat-${seatNumber}`}
+            key={`sle-${seatNumber}`}
             student={student}
             onUpdatePoints={handleUpdatePoints}
             formatSeatNumber={formatSeatNumber}
@@ -69,7 +69,7 @@ export const StudentGrid: React.FC<StudentGridProps> = ({
         };
         slots.push(
           <StudentCard 
-            key={`empty-${seatNumber}`}
+            key={`sls-${seatNumber}`}
             student={emptyStudent}
             onUpdatePoints={() => {}} // No action for empty seats
             formatSeatNumber={formatSeatNumber}
