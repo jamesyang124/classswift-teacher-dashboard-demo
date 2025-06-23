@@ -45,11 +45,13 @@ const ClassMgmtModal: React.FC<ClassMgmtModalProps> = ({ onClose, classId }) => 
 
   useEffect(() => {
     connect(classId);
+    // Reset all scores when modal opens
+    dispatch(clearAllScores());
     return () => {
       clearUpdates();
       initialSyncRef.current = false;
     };
-  }, [classId, connect, clearUpdates]);
+  }, [classId, connect, clearUpdates, dispatch]);
 
   // Note: WebSocket connection persists across modal open/close cycles
   // Only disconnect when user explicitly leaves the class or app closes
@@ -154,6 +156,7 @@ const ModalHeader = styled(StyledModalHeader)`
 
 const ModalTitle = styled(StyledModalTitle)`
   padding-bottom: 0;
+  max-width: 100%;
 `;
 
 const ClassInfo = styled(StyledClassInfo)`
@@ -169,6 +172,10 @@ const ClassName = styled.h2`
   font-weight: ${props => props.theme.typography.weights.bold};
   color: ${props => props.theme.colors.gray[900]};
   margin: 0;
+  max-width: 50%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 const StudentCount = styled.span`

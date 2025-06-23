@@ -169,6 +169,10 @@ const ClassName = styled.h3`
   font-weight: ${props => props.theme.typography.weights.medium};
   margin: 0;
   flex: 1;
+  max-width: 80%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 const ClassStatus = styled.span<{ $isActive: boolean }>`

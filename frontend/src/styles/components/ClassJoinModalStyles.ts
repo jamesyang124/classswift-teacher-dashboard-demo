@@ -37,7 +37,7 @@ export const StyledInfoLabel = styled.div`
   overflow: hidden;
   text-overflow: ellipsis;
   flex-shrink: 1;
-  max-width: 14ch; /* Limit ID to 14 characters, truncate with ellipsis if longer */
+  max-width: 80%;
 `;
 
 export const StyledModalTitle = styled.h2`

@@ -38,7 +38,7 @@ export const StudentCard: React.FC<StudentCardProps> = ({
         {formatSeatNumber(student.seatNumber!)}
       </StyledSeatHeader>
       <StyledStudentName $isGuest={student.isGuest}>
-        {student.name}
+        <span>{student.name}</span>
       </StyledStudentName>
       <StyledScoreContainer>
         <StyledScoreButton 

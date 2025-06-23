@@ -1,7 +1,6 @@
 export * from './ButtonStyles';
 export * from './ClassJoinModalStyles';
 export * from './ClassMgmtModalStyles';
-export * from './DashboardStyles';
 export * from './QRCodeDisplayStyles';
 export * from './ModalStyles';
 export * from './StudentCardStyles';

@@ -37,15 +37,24 @@ export const StyledStudentName = styled.div<{ $isGuest: boolean }>`
   font-weight: ${props => props.theme.typography.weights.medium};
   color: ${props => props.$isGuest ? props.theme.colors.gray[400] : props.theme.colors.gray[800]};
   height: 42px;
+  border-bottom: 2px solid ${props => props.$isGuest ? '#9CA3AF' : '#3B82F6'};
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  
+  /* Create a centered, truncated text container */
   display: flex;
   align-items: center;
   justify-content: center;
-  border-bottom: 2px solid ${props => props.$isGuest ? '#9CA3AF' : '#3B82F6'};
-  position: relative;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
+  
+  /* Inner span for text truncation */
+  & > span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: inline-block;
+  }
   
   &::after {
     content: '';

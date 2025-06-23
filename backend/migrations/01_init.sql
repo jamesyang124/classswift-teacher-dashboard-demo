@@ -129,7 +129,7 @@ INSERT INTO classes (id, public_id, name) VALUES
 ('class-2', 'A12B3456', '101 Math'),
 ('class-3', 'B23C4567', '205 History'),
 ('class-4', 'C34D5678', 'Art Studio'),
-('class-5', 'D45E6789', 'English Literature')
+('class-5', 'D45E6789', 'English Literature Is Way Too Good For Sleep')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO students (name, class_id, seat_number) VALUES 
@@ -140,7 +140,7 @@ INSERT INTO students (name, class_id, seat_number) VALUES
 ('Jessica', 'class-1', NULL),
 ('Ashley', 'class-1', NULL),
 -- class-2
-('Cody', 'class-2', 1),
+('Codyerzofazima', 'class-2', 1),
 ('Zest', 'class-2', 2),
 ('James', 'class-2', 3),
 ('Sarah', 'class-2', NULL),
