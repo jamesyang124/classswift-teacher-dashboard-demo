@@ -14,15 +14,26 @@ interface StudentCardProps {
   student: Student;
   onUpdatePoints: (studentId: number, change: number) => void;
   formatSeatNumber: (seatNumber: number) => string;
+  hasRealtimeUpdate?: boolean;
 }
 
 export const StudentCard: React.FC<StudentCardProps> = ({ 
   student, 
   onUpdatePoints, 
-  formatSeatNumber 
+  formatSeatNumber,
+  hasRealtimeUpdate = false
 }) => {
   return (
-    <StyledStudentCard $isGuest={student.isGuest}>
+    <StyledStudentCard 
+      $isGuest={student.isGuest}
+      data-seat={student.seatNumber}
+      className={`${student.isGuest ? 'student-empty' : 'student-occupied'} ${hasRealtimeUpdate ? 'realtime-update' : ''}`}
+      style={{
+        transform: hasRealtimeUpdate ? 'scale(1.05)' : 'scale(1)',
+        boxShadow: hasRealtimeUpdate ? '0 4px 12px rgba(59, 130, 246, 0.3)' : undefined,
+        transition: 'all 0.3s ease'
+      }}
+    >
       <StyledSeatHeader $isGuest={student.isGuest}>
         {formatSeatNumber(student.seatNumber!)}
       </StyledSeatHeader>

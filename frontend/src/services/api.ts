@@ -1,12 +1,11 @@
 import type { QRCodeResponse, APIResponse } from '../types/api';
 import type { ClassResponse } from '../types/class';
 import type { StudentsResponse } from '../types/student';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
+import { config } from '../config/env';
 
 export const apiService = {
   async getClassInfo(classId: string): Promise<APIResponse<ClassResponse>> {
-    const response = await fetch(`${API_BASE_URL}/classes/${classId}`);
+    const response = await fetch(`${config.api.baseUrl}/classes/${classId}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch class info: ${response.statusText}`);
@@ -16,7 +15,7 @@ export const apiService = {
   },
 
   async getClassQRCode(classId: string): Promise<QRCodeResponse> {
-    const response = await fetch(`${API_BASE_URL}/classes/${classId}/qr`);
+    const response = await fetch(`${config.api.baseUrl}/classes/${classId}/qr`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch QR code: ${response.statusText}`);
@@ -26,7 +25,7 @@ export const apiService = {
   },
 
   async getClassStudents(classId: string): Promise<APIResponse<StudentsResponse>> {
-    const response = await fetch(`${API_BASE_URL}/classes/${classId}/students`);
+    const response = await fetch(`${config.api.baseUrl}/classes/${classId}/students`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch class students: ${response.statusText}`);

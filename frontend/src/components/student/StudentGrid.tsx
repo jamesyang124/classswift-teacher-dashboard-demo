@@ -4,13 +4,18 @@ import { StyledStudentGrid, StyledScrollContainer } from '../../styles/component
 import { StudentCard } from './StudentCard';
 import { updateStudentPoints } from '../../store/slices/studentSlice';
 import type { RootState, AppDispatch } from '../../store';
+import type { Student } from '../../types/student';
 
 interface StudentGridProps {
   formatSeatNumber: (seatNumber: number) => string;
+  getSeatUpdate: (seatNumber: number) => Student | undefined;
+  hasAnimation: (seatNumber: number) => boolean;
 }
 
 export const StudentGrid: React.FC<StudentGridProps> = ({
-  formatSeatNumber
+  formatSeatNumber,
+  getSeatUpdate,
+  hasAnimation
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { students, totalCapacity, loading, error } = useSelector((state: RootState) => state.student);
@@ -32,15 +37,22 @@ export const StudentGrid: React.FC<StudentGridProps> = ({
   const generateGridSlots = () => {
     const slots = [];
     for (let seatNumber = 1; seatNumber <= totalCapacity; seatNumber++) {
-      const student = seatMap.get(seatNumber);
-      if (student) {
-        // Seated student
+      // Check for real-time seat updates first, but prefer Redux store for points
+      const seatUpdate = getSeatUpdate(seatNumber);
+      const reduxStudent = seatMap.get(seatNumber);
+      
+      // Use Redux student if available (for up-to-date points), otherwise use seat update
+      const student = reduxStudent || seatUpdate;
+      
+      if (student && !student.isGuest) {
+        // Seated student (either from store or real-time update)
         slots.push(
           <StudentCard 
             key={`seat-${seatNumber}`}
             student={student}
             onUpdatePoints={handleUpdatePoints}
             formatSeatNumber={formatSeatNumber}
+            hasRealtimeUpdate={hasAnimation(seatNumber)}
           />
         );
       } else {
@@ -61,6 +73,7 @@ export const StudentGrid: React.FC<StudentGridProps> = ({
             student={emptyStudent}
             onUpdatePoints={() => {}} // No action for empty seats
             formatSeatNumber={formatSeatNumber}
+            hasRealtimeUpdate={false}
           />
         );
       }

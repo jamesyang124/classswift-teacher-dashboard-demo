@@ -63,6 +63,28 @@ const studentSlice = createSlice({
     setError: (state, action: PayloadAction<string>) => {
       state.error = action.payload;
     },
+    updateClassCapacity: (state, action: PayloadAction<{
+      totalCapacity: number;
+      enrolledCount: number;
+      availableSlots: number;
+    }>) => {
+      state.totalCapacity = action.payload.totalCapacity;
+      state.enrolledCount = action.payload.enrolledCount;
+      state.availableSlots = action.payload.availableSlots;
+    },
+    updateStudents: (state, action: PayloadAction<Student[]>) => {
+      // Preserve existing points when updating students from WebSocket
+      const existingPointsMap = new Map(
+        state.students.map(student => [student.id, student.points])
+      );
+      
+      state.students = action.payload.map(student => ({
+        ...student,
+        points: existingPointsMap.get(student.id) ?? 0, // Preserve existing points or default to 0
+        isGuest: false // All enrolled students are not guests
+      }));
+      state.enrolledCount = action.payload.length;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -84,5 +106,5 @@ const studentSlice = createSlice({
   },
 });
 
-export const { updateStudentPoints, clearStudents, setError } = studentSlice.actions;
+export const { updateStudentPoints, clearStudents, setError, updateClassCapacity, updateStudents } = studentSlice.actions;
 export default studentSlice.reducer;

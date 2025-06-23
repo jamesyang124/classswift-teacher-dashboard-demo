@@ -1,10 +1,10 @@
 import React from 'react';
 import { 
   StyledQRCodeSection, 
-  StyledQRCodeContainer, 
-  StyledQRCodeImage 
+  StyledQRCodeContainer
 } from '../../styles';
 import { useQRCode } from '../../hooks/useQRCode';
+import { QRImage } from './QRImage';
 
 interface QRCodeDisplayProps {
   classId: string;
@@ -47,9 +47,10 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ classId, alt }) =>
   return (
     <StyledQRCodeSection>
       <StyledQRCodeContainer>
-        <StyledQRCodeImage 
-          src={qrData.qrCodeBase64} 
+        <QRImage 
+          src={qrData.qrCodeBase64}
           alt={alt}
+          classId={classId}
         />
       </StyledQRCodeContainer>
     </StyledQRCodeSection>

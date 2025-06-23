@@ -10,13 +10,18 @@ import {
 import { StudentCard } from './StudentCard';
 import { updateStudentPoints } from '../../store/slices/studentSlice';
 import type { RootState, AppDispatch } from '../../store';
+import type { Student } from '../../types/student';
 
 interface GroupViewProps {
   formatSeatNumber: (seatNumber: number) => string;
+  getSeatUpdate: (seatNumber: number) => Student | undefined;
+  hasAnimation: (seatNumber: number) => boolean;
 }
 
 export const GroupView: React.FC<GroupViewProps> = ({
-  formatSeatNumber
+  formatSeatNumber,
+  getSeatUpdate,
+  hasAnimation
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const { students, totalCapacity, loading, error } = useSelector((state: RootState) => state.student);
@@ -38,10 +43,16 @@ export const GroupView: React.FC<GroupViewProps> = ({
       }
     });
     
-    // Generate all seats up to capacity
+    // Generate all seats up to capacity with real-time updates
     for (let seatNumber = 1; seatNumber <= totalCapacity; seatNumber++) {
-      const student = seatMap.get(seatNumber);
-      if (student) {
+      // Check for real-time seat updates first, but prefer Redux store for points
+      const seatUpdate = getSeatUpdate(seatNumber);
+      const reduxStudent = seatMap.get(seatNumber);
+      
+      // Use Redux student if available (for up-to-date points), otherwise use seat update
+      const student = reduxStudent || seatUpdate;
+      
+      if (student && !student.isGuest) {
         enrolledStudents.push(student);
       } else {
         // Create guest seat placeholder
@@ -93,6 +104,7 @@ export const GroupView: React.FC<GroupViewProps> = ({
                 student={student}
                 onUpdatePoints={handleUpdatePoints}
                 formatSeatNumber={formatSeatNumber}
+                hasRealtimeUpdate={hasAnimation(student.seatNumber!)}
               />
             ))}
           </StyledGroupStudents>
