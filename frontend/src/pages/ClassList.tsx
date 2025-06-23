@@ -38,7 +38,7 @@ export const ClassList: React.FC<ClassListProps> = ({ onSelectClass }) => {
   if (loading) {
     return (
       <Container>
-        <Title>Your Classes</Title>
+        <Title>Active Classes</Title>
         <LoadingMessage>Loading classes...</LoadingMessage>
       </Container>
     );
@@ -92,6 +92,9 @@ const Container = styled.div`
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 
   @media (max-width: 900px) {
     padding: ${props => props.theme.spacing.md};
@@ -129,17 +132,13 @@ const EmptyMessage = styled.div`
 `;
 
 const ClassGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: ${props => props.theme.spacing.lg};
+  display: flex;
+  flex-direction: column;
+  gap: ${props => props.theme.spacing.md};
   padding: ${props => props.theme.spacing.md} 0;
   width: 100%;
+  max-width: 600px;
   box-sizing: border-box;
-
-  @media (max-width: 600px) {
-    grid-template-columns: 1fr;
-    gap: ${props => props.theme.spacing.md};
-  }
 `;
 
 const ClassCard = styled.div<{ $isActive: boolean }>`

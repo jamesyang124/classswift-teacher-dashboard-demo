@@ -80,7 +80,7 @@ export const AppContent: React.FC<AppContentProps> = () => {
       {/* Modals overlay on top of class list */}
       {(showLeftModal || showRightModal) && (
         <ModalOverlay>
-          <ModalContainer>
+          <ModalContainer $showLeftModal={showLeftModal} $showRightModal={showRightModal}>
             {showLeftModal && selectedClassId && <ClassJoinModal onClose={handleCloseLeftModal} onBackToClassList={handleBackToClassList} classId={selectedClassId} />}
             {showRightModal && selectedClassId && <ClassMgmtModal onClose={handleCloseRightModal} classId={selectedClassId} />}
           </ModalContainer>
@@ -115,18 +115,32 @@ const ModalOverlay = styled.div`
   justify-content: center;
   z-index: 1000;
   padding: ${props => props.theme.spacing.lg};
+  overflow-y: auto;
+  
+  @media (max-width: ${props => props.theme.breakpoints.tablet}) {
+    align-items: flex-start;
+    padding: ${props => props.theme.spacing.md};
+  }
 `;
 
-const ModalContainer = styled.div`
+const ModalContainer = styled.div<{ $showLeftModal: boolean; $showRightModal: boolean }>`
   display: flex;
   gap: ${props => props.theme.spacing.md};
   max-width: 1200px;
   width: 100%;
   align-items: flex-start;
+  justify-content: ${props => 
+    props.$showLeftModal && props.$showRightModal ? 'center' :
+    props.$showLeftModal ? 'center' :
+    props.$showRightModal ? 'center' : 'center'
+  };
   
   @media (max-width: ${props => props.theme.breakpoints.tablet}) {
     flex-direction: column;
     max-width: 600px;
     align-items: center;
+    margin-top: ${props => props.theme.spacing.md};
+    margin-bottom: ${props => props.theme.spacing.md};
+    min-height: calc(100vh - ${props => props.theme.spacing.md} * 2);
   }
 `;
