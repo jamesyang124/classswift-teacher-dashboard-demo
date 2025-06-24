@@ -31,10 +31,3 @@ type QRCodeResponse struct {
 	Message string     `json:"message"`
 }
 
-// StudentsResponse is a response struct for class students.
-type StudentsResponse struct {
-	Students        []StudentResponse `json:"students"`
-	TotalCapacity   int               `json:"totalCapacity"`
-	EnrolledCount   int               `json:"enrolledCount"`
-	AvailableSlots  int               `json:"availableSlots"`
-}

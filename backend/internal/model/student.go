@@ -10,35 +10,32 @@ type Student struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-// ClassEnrollment represents the many-to-many relationship between students and classes.
-type ClassEnrollment struct {
-	ID         uint      `json:"id" gorm:"primaryKey"`
-	StudentID  uint      `json:"studentId" gorm:"not null;index"`
-	ClassID    string    `json:"classId" gorm:"not null;index"`
-	SeatNumber *int      `json:"seatNumber"`
-	EnrolledAt time.Time `json:"enrolledAt" gorm:"default:CURRENT_TIMESTAMP"`
-	UpdatedAt  time.Time `json:"updatedAt"`
+// StudentPreferredSeat represents the many-to-many relationship between students and classes with preferred seats.
+type StudentPreferredSeat struct {
+	ID                  uint      `json:"id" gorm:"primaryKey"`
+	StudentID           uint      `json:"studentId" gorm:"not null;index"`
+	ClassID             string    `json:"classId" gorm:"not null;index"`
+	PreferredSeatNumber int       `json:"preferredSeatNumber" gorm:"not null"`
+	CreatedAt           time.Time `json:"createdAt" gorm:"default:CURRENT_TIMESTAMP"`
+	UpdatedAt           time.Time `json:"updatedAt"`
 	
 	// Foreign key relationships
 	Student Student `json:"student" gorm:"foreignKey:StudentID"`
 	Class   Class   `json:"class" gorm:"foreignKey:ClassID"`
 }
 
-// StudentWithEnrollment combines student info with their enrollment details for a specific class.
-type StudentWithEnrollment struct {
-	ID         uint      `json:"id"`
-	Name       string    `json:"name"`
-	ClassID    string    `json:"classId"`
-	SeatNumber *int      `json:"seatNumber"`
-	EnrolledAt time.Time `json:"enrolledAt"`
-	UpdatedAt  time.Time `json:"updatedAt"`
+// TableName sets the table name for the StudentPreferredSeat model
+func (StudentPreferredSeat) TableName() string {
+	return "student_preferred_seats"
 }
 
-// StudentResponse represents student data returned to the frontend.
-type StudentResponse struct {
-	ID         uint   `json:"id"`
-	Name       string `json:"name"`
-	SeatNumber *int   `json:"seatNumber"`
-	Score      int    `json:"score"`
-	IsGuest    bool   `json:"isGuest"`
+// StudentWithClassPreferredSeat combines student info with their preferred seat details for a specific class.
+type StudentWithClassPreferredSeat struct {
+	ID                  uint      `json:"id"`
+	Name                string    `json:"name"`
+	ClassID             string    `json:"classId"`
+	PreferredSeatNumber int       `json:"preferredSeatNumber"`
+	CreatedAt           time.Time `json:"createdAt"`
+	UpdatedAt           time.Time `json:"updatedAt"`
 }
+

@@ -52,7 +52,7 @@ func TestJoinStudentToClass_NewStudent_DISABLED(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 	mock.ExpectCommit()
 
-	err := service.JoinStudentToClass(db, class, studentName, seatNumber)
+	_, _, err := service.JoinStudentToClass(db, studentName, class.ID)
 	if err != nil {
 		t.Errorf("expected no error for new student, got %v", err)
 	}
@@ -81,7 +81,7 @@ func TestJoinStudentToClass_SeatOccupied_DISABLED(t *testing.T) {
 	// Expect rollback
 	mock.ExpectRollback()
 
-	err := service.JoinStudentToClass(db, class, studentName, seatNumber)
+	_, _, err := service.JoinStudentToClass(db, studentName, class.ID)
 	if err == nil {
 		t.Errorf("expected error for occupied seat, got nil")
 	}
@@ -123,7 +123,7 @@ func TestJoinStudentToClass_AlreadyEnrolled_DISABLED(t *testing.T) {
 	// Mock transaction commit
 	mock.ExpectCommit()
 
-	err := service.JoinStudentToClass(db, class, studentName, seatNumber)
+	_, _, err := service.JoinStudentToClass(db, studentName, class.ID)
 	if err != nil {
 		t.Errorf("expected no error for already enrolled student, got %v", err)
 	}
@@ -151,24 +151,6 @@ func TestGetClassByPublicID(t *testing.T) {
 	}
 }
 
-func TestGetClassStudents_DISABLED(t *testing.T) {
-	t.Skip("Test needs updating for new schema")
-	db, mock := setupMockDB(t)
-	classID := "class-1"
-	mock.ExpectQuery(`SELECT \* FROM "students" WHERE class_id = \$1`).
-		WithArgs(classID).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "class_id"}).AddRow(1, "Alice", classID).AddRow(2, "Bob", classID))
-	students, err := service.GetClassStudents(db, classID)
-	if err != nil {
-		t.Errorf("expected no error, got %v", err)
-	}
-	if len(students) != 2 {
-		t.Errorf("expected 2 students, got %d", len(students))
-	}
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %v", err)
-	}
-}
 
 func TestGetClasses(t *testing.T) {
 	db, mock := setupMockDB(t)
@@ -186,30 +168,6 @@ func TestGetClasses(t *testing.T) {
 	}
 }
 
-func TestClearSeatForClassByPublicID_DISABLED(t *testing.T) {
-	t.Skip("Test needs updating for new schema")
-	db, mock := setupMockDB(t)
-	publicID := "PUB1"
-	classID := "class-1"
-	mock.ExpectBegin()
-	mock.ExpectQuery(`SELECT \* FROM "classes" WHERE public_id = \$1 ORDER BY "classes"\."id" LIMIT (\$\d+|1)`).
-		WithArgs(publicID, 1).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "public_id", "name"}).AddRow(classID, publicID, "Test Class"))
-	mock.ExpectExec(`UPDATE "students" SET "seat_number"=\$1,"updated_at"=\$2 WHERE class_id = \$3`).
-		WithArgs(nil, sqlmock.AnyArg(), classID).
-		WillReturnResult(sqlmock.NewResult(0, 2))
-	mock.ExpectCommit()
-	class, err := service.ClearSeatForClassByPublicID(db, publicID)
-	if err != nil {
-		t.Errorf("expected no error, got %v", err)
-	}
-	if class == nil || class.ID != classID {
-		t.Errorf("expected class with ID %s, got %+v", classID, class)
-	}
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %v", err)
-	}
-}
 
 func TestGetStudentByName(t *testing.T) {
 	db, mock := setupMockDB(t)

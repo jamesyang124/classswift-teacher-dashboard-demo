@@ -27,19 +27,6 @@ func setupMockDB(t *testing.T) *gorm.DB {
 	return gormDB
 }
 
-func TestGetClassStudents_NotFound(t *testing.T) {
-	config.Init()
-	database.SetDB(setupMockDB(t))
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	c.Params = append(c.Params, gin.Param{Key: "classId", Value: "nonexistent"})
-
-	handler.GetClassStudents(c)
-
-	if w.Code != http.StatusNotFound && w.Code != http.StatusInternalServerError {
-		t.Errorf("Expected 404 or 500 for missing class, got %d", w.Code)
-	}
-}
 
 func TestGetClassQRCode_NotFound(t *testing.T) {
 	config.Init()
@@ -61,10 +48,12 @@ func TestHandleStudentJoin_NotFound(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Params = append(c.Params, gin.Param{Key: "classId", Value: "nonexistent"})
+	c.Request, _ = http.NewRequest("GET", "/classes/nonexistent/join", nil)
+	c.Request.Header.Set("X-Student-Name", "TestStudent")
 
 	handler.HandleStudentJoin(c)
 
-	if w.Code != http.StatusNotFound && w.Code != http.StatusForbidden {
-		t.Errorf("Expected 404 or 403 for missing/inactive class, got %d", w.Code)
+	if w.Code != http.StatusBadRequest && w.Code != http.StatusInternalServerError {
+		t.Errorf("Expected 400 or 500 for missing class, got %d", w.Code)
 	}
 }

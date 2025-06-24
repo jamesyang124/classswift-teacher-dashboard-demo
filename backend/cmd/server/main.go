@@ -56,11 +56,9 @@ func main() {
 		r.Group("/api/v1"),
 		handler.GetClasses,
 		handler.GetClass,
-		handler.GetClassStudents,
 		handler.GetClassQRCode,
 		handler.HandleStudentJoin,
 		handler.HandleWebSocket,
-		handler.ClearSeatForClassByPublicID,
 	)
 
 	logger.Infof("Starting ClassSwift API server on port %s", config.Port())
