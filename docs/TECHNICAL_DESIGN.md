@@ -328,10 +328,8 @@ type WebSocketMessage struct {
 // API Endpoints - Multi-class enrollment system
 GET    /api/v1/classes                   - Get all classes list
 GET    /api/v1/classes/:classId          - Get class information with students
-GET    /api/v1/classes/:classId/students - Get students enrolled in class
 GET    /api/v1/classes/:classId/qr       - Get QR code and join link
 GET    /api/v1/classes/:classId/join     - QR code join endpoint (redirects)
-POST   /api/v1/classes/:classId/reset-seats - Reset all seated students to null
 ```
 
 **API Request/Response Examples:**
