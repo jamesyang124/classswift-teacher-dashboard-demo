@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the high-level system architecture for the ClassSwift Teacher Dashboard, a comprehensive classroom management system. Updated to reflect the completed multi-class enrollment system and real-time animation features.
+This document outlines the high-level system architecture for the ClassSwift Teacher Dashboard, a comprehensive classroom management system. Updated to reflect the completed seat management system with websocket-based real-time updates and client-side seat assignment logic.
 
 ## Technical Architecture
 
@@ -20,13 +20,17 @@ This document outlines the high-level system architecture for the ClassSwift Tea
 - **Development**: Vite HMR + Go Air live reload in containers
 
 ### Redux State Management
-- **Store Configuration**: Redux Toolkit 2.2.5 for simplified state management
-- **React Integration**: React-Redux 9.1.2 with hooks API
+- **Store Configuration**: Redux Toolkit 2.8.2 for simplified state management
+- **React Integration**: React-Redux 9.2.0 with hooks API
 - **Slice Structure**: 
-  - `classSlice`: Class information and student data
+  - `classesSlice`: Multi-class seat map management with real-time updates
   - `uiSlice`: Modal states, active tabs, loading states
-  - `studentSlice`: Student points, seat assignments, and group management
-  - `websocketSlice`: Real-time connection state and seat assignment messaging
+  - `websocketSlice`: Real-time connection state and message handling
+- **Key Features**:
+  - Client-side seat assignment with preferred seat logic
+  - Cross-class student exclusivity enforcement
+  - Real-time websocket integration for seat updates
+  - No API dependencies for seat operations (fully client-side)
 - **Middleware**: Redux Thunk for async operations (built into RTK)
 - **DevTools**: Redux DevTools integration for debugging
 
@@ -77,8 +81,8 @@ System Architecture - Multi-Class Enrollment System
 │   │   ├── StudentCard (score management 0-100)
 │   │   └── Navigation (tab switching)
 │   ├── Redux Store (RTK)
-│   │   ├── studentSlice (seat assignments + scores)
-│   │   ├── websocketSlice (real-time updates)
+│   │   ├── classesSlice (multi-class seat maps + real-time updates)
+│   │   ├── websocketSlice (connection management)
 │   │   ├── uiSlice (modal states)
 │   │   └── classSlice (class metadata)
 │   ├── Hooks
@@ -116,6 +120,32 @@ System Architecture - Multi-Class Enrollment System
     ├── QR Code Generation (class-specific redirects)
     └── ClassSwift ViewSonic (authentication platform)
 ```
+
+## Seat Management Architecture
+
+### Client-Side Seat Assignment Flow
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   WebSocket     │───▶│   Redux Store    │───▶│   UI Components │
+│   class_update  │    │   classesSlice   │    │   StudentGrid   │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│ Student Data    │    │ Seat Assignment  │    │ Real-time UI    │
+│ {id?, name,     │    │ Logic            │    │ Updates         │
+│  preferredSeat} │    │ assignSeatNumber │    │                 │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
+
+### Key Architectural Decisions
+
+1. **No API Dependencies**: Seat operations are fully client-side
+2. **WebSocket Only**: Real-time updates via websocket events
+3. **Student Exclusivity**: Automatic cross-class cleanup
+4. **Preferred Seats**: Sophisticated fallback logic for enrolled students
+5. **Guest Support**: Seamless guest user experience with "Guest" display
 
 ## Frontend Architecture
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document contains the technical specifications and design patterns for the ClassSwift Teacher Dashboard application, including data structures, API design, and implementation details. Updated to reflect the completed multi-class enrollment system with normalized database schema and animation features.
+This document contains the technical specifications and design patterns for the ClassSwift Teacher Dashboard application, including data structures, API design, and implementation details. Updated to reflect the completed seat management system with websocket-based real-time updates, client-side seat assignment, and comprehensive cross-class student exclusivity.
 
 ## Data Structure & API Design
 
@@ -26,34 +26,43 @@ This document contains the technical specifications and design patterns for the 
 ### TypeScript Interfaces
 
 ```typescript
-// Frontend interfaces matching the multi-class enrollment system
-interface Student {
-  id: number;
-  name: string;
-  seatNumber?: number; // NULL = not seated, 1-30 = seated
-  score: number; // 0-100 range, non-negative integers  
+// Frontend interfaces for seat management system
+interface ClassSeat {
+  studentId?: number;
+  studentName: string;
   isGuest: boolean;
-  classId?: string; // Current class context
-  enrolledAt?: string;
-  updatedAt?: string;
+  isEmpty: boolean;
+  score: number;
 }
 
-interface ClassInfo {
-  id: string;
+interface ClassSeatMap {
+  [seatNumber: number]: ClassSeat;
+}
+
+interface ClassWithSeatMap {
   publicId: string;
   name: string;
-  studentCount: number;
-  totalCapacity: number;
   isActive: boolean;
-  joinLink?: string; // Computed by backend
   createdAt: string;
   updatedAt: string;
+  seatMap: ClassSeatMap;
+  totalCapacity: number;
+  availableSlots: number;
+  initialized?: boolean;
+}
+
+interface JoiningStudent {
+  name: string;
+  seatNumber: number;
+  id?: number; // Optional - undefined for guest users
+  preferredSeatNumber?: number;
+  fromClassId?: string;
 }
 
 interface WebSocketMessage {
-  type: 'STUDENT_JOINED' | 'STUDENT_LEFT' | 'CLASS_UPDATED' | 'SEAT_UPDATED';
+  type: 'class_update';
   classId: string;
-  data: any;
+  joiningStudent: JoiningStudent;
   timestamp: string;
 }
 
@@ -68,20 +77,80 @@ interface APIResponse<T = any> {
 ### Redux Store Structure
 
 ```typescript
-// Current implementation uses four main slices for state management
-interface RootState {
-  student: StudentState;     // Student data and seat assignments
-  websocket: WebSocketState; // Real-time connection management  
-  class: ClassState;        // Class information and metadata
+// Multi-class seat management state structure
+interface ClassesState {
+  classes: { [classId: string]: ClassWithSeatMap };
+  currentClassId: string | null;
+  joinLinks: { [classId: string]: string };
+  loading: boolean;
+  error: string | null;
 }
 
-// Key features of the Redux implementation:
-// - Real-time priority system (WebSocket updates take precedence)
-// - Animation state management for seat transitions
-// - Multi-class context switching
-// - Score management with 0-100 range validation
-// - Seat assignment tracking with capacity limits (30 seats max)
+// Key features of the seat management system:
+// - Client-side seat assignment with preferred seat logic
+// - Real-time websocket updates for cross-class student movement
+// - Student exclusivity (cannot be in multiple classes simultaneously)
+// - Sophisticated initialization (first-open vs re-open behavior)
+// - Guest user support with 'Guest' display name
+// - Automatic available slot calculation from seat map
+// - No API dependencies for seat operations (fully client-side)
 ```
+
+### Seat Management Implementation
+
+#### Core Logic Functions
+
+```typescript
+// Seat assignment algorithm with preferred seat logic
+const assignSeatNumber = (
+  preferredSeatNumber: number | null, 
+  seatMap: ClassSeatMap, 
+  totalCapacity: number
+): number => {
+  // If preferred seat is available and valid, use it
+  if (preferredSeatNumber && 
+      preferredSeatNumber > 0 && 
+      preferredSeatNumber <= totalCapacity && 
+      seatMap[preferredSeatNumber] && 
+      seatMap[preferredSeatNumber].isEmpty) {
+    return preferredSeatNumber;
+  }
+  
+  // Fallback to lowest available seat in ASC order
+  for (let i = 1; i <= totalCapacity; i++) {
+    if (seatMap[i] && seatMap[i].isEmpty) {
+      return i;
+    }
+  }
+  
+  return 0; // No seats available
+};
+
+// Available slots calculation from seat map
+const calculateAvailableSlots = (seatMap: ClassSeatMap, totalCapacity: number): number => {
+  let emptyCount = 0;
+  for (let i = 1; i <= totalCapacity; i++) {
+    if (seatMap[i] && seatMap[i].isEmpty) {
+      emptyCount++;
+    }
+  }
+  return emptyCount;
+};
+```
+
+#### Key Redux Actions
+
+1. **syncWithInitialStudents**: Initialize class with empty seats (first-open behavior)
+2. **updateSeatFromWebSocket**: Handle real-time student joining with cross-class exclusivity
+3. **removeStudentFromAllClasses**: Remove student from all classes when moving
+4. **clearClassSeats**: Reset all seats to empty (client-side only)
+
+#### WebSocket Event Handling
+
+- **Event Type**: `class_update`
+- **Guest Users**: No ID provided, displayed as "Guest"
+- **Enrolled Students**: ID provided, supports preferred seat assignment
+- **Cross-Class Movement**: Automatic cleanup from previous class before assignment
 
 ### Styled-Components Theme
 
@@ -142,40 +211,41 @@ const StyledStudentCard = styled.div<{ isGuest: boolean }>`
 `;
 ```
 
-### Seat-based Authentication and Class Joining Flow
+### Client-Side Seat Management Flow
 
-The seat-based authentication follows this specific flow:
+The current implementation uses client-side seat assignment with websocket coordination:
 
-1. **Seat QR Code Generation**: 
-   - Each physical seat has a unique QR code containing seat-specific URL
-   - QR codes include both seat ID and class ID: `http://localhost:3000/api/v1/classes/:classId/seats/:seatId/join`
-   - Frontend displays classroom QR code in left modal for class ID sharing
+1. **Class QR Code System**: 
+   - Single QR code per class (not per seat) containing class join URL
+   - QR code URL: `http://localhost:3000/api/v1/classes/:classId/join`
+   - Frontend displays QR code in left modal for students to scan
 
-2. **Seat-based Student Authentication**:
-   - Student scans seat-specific QR code with mobile device
-   - Mobile app/browser makes `POST /api/v1/classes/:classId/seats/:seatId/join` with student credentials
-   - Backend validates student enrollment and seat availability
-   - Backend generates session token containing: studentId, classId, seatId, timestamp, expiration
-   - Backend assigns seat exclusively to authenticated student for entire session
-   - Backend broadcasts seat assignment event via WebSocket to teacher dashboard
+2. **Student Join Process**:
+   - Student scans class QR code with mobile device
+   - Mobile app/browser makes `POST /api/v1/classes/:classId/join` with student name
+   - Backend looks up student by name to determine enrollment status
+   - Backend broadcasts `class_update` websocket event to teacher dashboard
+   - **No seat assignment on backend** - purely notification system
 
-3. **Session Token Management**:
-   - Session tokens stored in client local storage for browser refresh persistence
-   - Tokens include expiration time and are validated server-side
-   - One seat per student policy enforced - prevents duplicate assignments
-   - Invalid tokens or seat conflicts return 401 Unauthorized
+3. **Client-Side Seat Assignment**:
+   - Teacher dashboard receives websocket `class_update` event
+   - Redux `updateSeatFromWebSocket` action processes the student data
+   - Client-side `assignSeatNumber` function determines optimal seat:
+     - **Enrolled students**: Use preferred seat if available, fallback to lowest ASC
+     - **Guest users**: Assign lowest available seat, display as "Guest"
+   - Real-time UI update shows student in assigned seat
 
-4. **Seat Assignment Rules**:
-   - Each seat (ID 1 to capacity) can only be occupied by one student per session
-   - Seat assignments are locked for entire class session
-   - Guest seats appear as gray cards (empty or non-enrolled students)
-   - Enrolled students appear as blue cards with seat ID display
+4. **Cross-Class Student Exclusivity**:
+   - Redux automatically searches all classes for existing student
+   - Removes student from previous class before assigning new seat
+   - Updates available slot counts for both affected classes
+   - Single student can only be in one class at a time
 
-5. **Real-time Updates**:
-   - Successfully authenticated students trigger WebSocket broadcast with seat assignment
-   - Teacher dashboard receives immediate seat-specific updates
-   - Student appears in specific seat position in right modal grid
-   - Guest seats can be manually managed by teacher through drag-and-drop
+5. **Real-time Coordination**:
+   - WebSocket events trigger immediate Redux state updates
+   - No API calls needed for seat operations (fully client-side)
+   - Teacher dashboard shows real-time seat assignments
+   - Sophisticated initialization behavior (first-open vs re-open modal)
 
 ### Backend Data Models
 
@@ -302,36 +372,18 @@ POST   /api/v1/classes/:classId/reset-seats - Reset all seated students to null
   ]
 }
 
-// GET /api/v1/classes/X58E9647/students
-// Response with multi-class enrollment data:
+// POST /api/v1/classes/X58E9647/join (Primary student interaction endpoint)
+// Request: { "studentName": "John Doe" }
+// Response: HTTP 200 + triggers websocket class_update event to teacher dashboard
+// Handles both enrolled students (with preferred seats) and guest users
 {
   "success": true,
-  "data": [
-    {
-      "id": 1,
-      "name": "Philip",
-      "classId": "class-1",
-      "seatNumber": 15,
-      "enrolledAt": "2025-06-21T10:15:00Z",
-      "updatedAt": "2025-06-21T10:15:00Z"
-    },
-    {
-      "id": 4,
-      "name": "Alice",
-      "classId": "class-1",
-      "seatNumber": null,
-      "enrolledAt": "2025-06-21T10:20:00Z",
-      "updatedAt": "2025-06-21T10:20:00Z"
-    },
-    {
-      "id": 12,
-      "name": "Michael",
-      "classId": "class-1",
-      "seatNumber": 7,
-      "enrolledAt": "2025-06-21T10:25:00Z",
-      "updatedAt": "2025-06-21T10:25:00Z"
-    }
-  ]
+  "message": "Successfully joined class",
+  "data": {
+    "studentName": "John Doe",
+    "classId": "X58E9647",
+    "isGuest": false
+  }
 }
 
 // GET /api/v1/classes/X58E9647/qr
@@ -348,12 +400,24 @@ POST   /api/v1/classes/:classId/reset-seats - Reset all seated students to null
 
 // Note: joinLink is dynamically composed by backend as:
 // BASE_URL + "/api/v1/classes/" + publicId + "/join"
-// This joinLink is what appears in the QR code and redirects to ClassSwift ViewSonic
+// This joinLink is used by student devices to join classes
 
-// GET /api/v1/classes/X58E9647/join (QR scan redirect endpoint)
-// Headers: X-Student-Name: "Alice" (optional, defaults to "Guest")
-// Response: 302 Redirect to https://www.classswift.viewsonic.io/
-// Purpose: QR code contains this URL, which redirects students to ClassSwift ViewSonic platform
+// WebSocket Events (Real-time communication)
+// Event: class_update
+// Sent to: Teacher dashboard websocket connection
+// Triggered by: Student joining via POST /api/join
+// Payload:
+{
+  "type": "class_update",
+  "classId": "X58E9647",
+  "joiningStudent": {
+    "name": "John Doe",
+    "id": 123,                    // Optional: undefined for guest users
+    "seatNumber": 0,              // Always 0 from backend (client assigns actual seat)
+    "preferredSeatNumber": 5      // Optional: preferred seat for enrolled students
+  },
+  "timestamp": "2025-12-24T10:30:00Z"
+}
 ```
 
 ### Database Schema Design
