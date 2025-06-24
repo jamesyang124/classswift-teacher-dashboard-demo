@@ -1,6 +1,5 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { apiService } from '../../services/api';
 import type { Student } from '../../types/student';
 
 export interface StudentState {
@@ -21,30 +20,6 @@ const initialState: StudentState = {
   error: null,
 };
 
-export const fetchClassStudents = createAsyncThunk(
-  'student/fetchClassStudents',
-  async (classId: string) => {
-    const response = await apiService.getClassStudents(classId);
-    if (!response.data || !response.data.students) {
-      throw new Error('Invalid response: missing student data');
-    }
-    
-    // Transform backend students to frontend students with score and isGuest
-    const students = response.data.students.map(student => ({
-      ...student,
-      score: 0, // Initialize score to 0
-      isGuest: false // All enrolled students are not guests
-    }));
-    
-    return {
-      students,
-      totalCapacity: response.data.totalCapacity,
-      enrolledCount: response.data.enrolledCount,
-      availableSlots: response.data.availableSlots
-    };
-  }
-);
-
 const studentSlice = createSlice({
   name: 'student',
   initialState,
@@ -52,7 +27,7 @@ const studentSlice = createSlice({
     updateStudentScore: (state, action: PayloadAction<{ studentId: number; change: number }>) => {
       const { studentId, change } = action.payload;
       const student = state.students.find(s => s.id === studentId);
-      if (student && !student.isGuest) {
+      if (student && student.id && !student.isGuest) { // Only update scores for enrolled students with IDs
         student.score = Math.max(0, Math.min(100, student.score + change));
       }
     },
@@ -63,25 +38,15 @@ const studentSlice = createSlice({
     setError: (state, action: PayloadAction<string>) => {
       state.error = action.payload;
     },
-    updateClassCapacity: (state, action: PayloadAction<{
-      totalCapacity: number;
-      enrolledCount: number;
-      availableSlots: number;
-    }>) => {
-      state.totalCapacity = action.payload.totalCapacity;
-      state.enrolledCount = action.payload.enrolledCount;
-      state.availableSlots = action.payload.availableSlots;
-    },
     updateStudents: (state, action: PayloadAction<Student[]>) => {
       // Preserve existing scores when updating students from WebSocket
       const existingScoresMap = new Map(
-        state.students.map(student => [student.id, student.score])
+        state.students.filter(s => s.id).map(student => [student.id!, student.score])
       );
-      
       state.students = action.payload.map(student => ({
         ...student,
-        score: existingScoresMap.get(student.id) ?? 0, // Preserve existing scores or default to 0
-        isGuest: false // All enrolled students are not guests
+        score: student.id ? (existingScoresMap.get(student.id) ?? 0) : 0, // Preserve existing scores for enrolled students
+        isGuest: !student.id // Students without IDs are guests
       }));
       state.enrolledCount = action.payload.length;
     },
@@ -100,25 +65,7 @@ const studentSlice = createSlice({
       state.availableSlots = state.totalCapacity;
     },
   },
-  extraReducers: (builder) => {
-    builder
-      .addCase(fetchClassStudents.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchClassStudents.fulfilled, (state, action) => {
-        state.loading = false;
-        state.students = action.payload.students;
-        state.totalCapacity = action.payload.totalCapacity;
-        state.enrolledCount = action.payload.enrolledCount;
-        state.availableSlots = action.payload.availableSlots;
-      })
-      .addCase(fetchClassStudents.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || 'Failed to fetch class students';
-      });
-  },
 });
 
-export const { updateStudentScore, clearStudents, setError, updateClassCapacity, updateStudents, clearAllScores, resetAllSeats } = studentSlice.actions;
+export const { updateStudentScore, clearStudents, setError, updateStudents, clearAllScores, resetAllSeats } = studentSlice.actions;
 export default studentSlice.reducer;

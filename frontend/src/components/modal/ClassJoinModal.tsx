@@ -20,7 +20,10 @@ interface ClassJoinModalProps {
 }
 
 const ClassJoinModal: React.FC<ClassJoinModalProps> = ({ onClose, onBackToClassList, classId }) => {
-  const className = useSelector((state: RootState) => state.class.classInfo?.name || '');
+  const className = useSelector((state: RootState) => {
+    const currentClassId = state.classes.currentClassId;
+    return currentClassId ? state.classes.classes[currentClassId]?.name || '' : '';
+  });
   const classData = { classId, className };
   return (
     <ModalContent>

@@ -52,7 +52,6 @@ func TestBroadcastClassUpdate_NilManager(t *testing.T) {
 
 	data := map[string]interface{}{
 		"totalCapacity":  30,
-		"enrolledCount":  15,
 		"availableSlots": 15,
 	}
 
@@ -69,7 +68,6 @@ func TestBroadcastClassUpdate_WithManager(t *testing.T) {
 	testUpdateType := "class_updated"
 	testData := map[string]interface{}{
 		"totalCapacity":  30,
-		"enrolledCount":  20,
 		"availableSlots": 10,
 	}
 

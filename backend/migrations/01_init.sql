@@ -172,113 +172,64 @@ INSERT INTO students (name) VALUES
 ('Amelia'),
 ('Henry'),
 ('Harper'),
-('Sebastian'),
-('Evelyn'),
-('Owen'),
-('Abigail'),
-('Jack'),
-('Emily'),
-('Luke'),
-('Elizabeth'),
-('Gabriel'),
-('Sofia'),
-('Samuel'),
-('Avery'),
-('Anthony'),
-('Ella'),
-('Christopher'),
-('Madison'),
-('Andrew'),
-('Scarlett'),
-('Joshua'),
-('Victoria'),
-('Nathan'),
-('Aria'),
-('Caleb'),
-('Grace')
+('Sebastian')
 ON CONFLICT DO NOTHING;
 
--- Class enrollment simulation with varying enrollment rates
--- class-1: 0% enrollment (0 students) - Empty class
--- No enrollments for class-1
+-- Remove old student_preferred_seats inserts
+DELETE FROM student_preferred_seats;
 
--- class-2: 20% enrollment (4 students out of 30 capacity)
-INSERT INTO student_preferred_seats (student_id, class_id, preferred_seat_number) VALUES 
-(1, 'class-2', 15),   -- Philip
-(2, 'class-2', 3),    -- Darrell
-(3, 'class-2', 22),   -- Maria
-(4, 'class-2', 8);    -- Jessica
+-- Helper to shuffle an integer array in-place (define this ONCE, outside the DO block)
+CREATE OR REPLACE FUNCTION array_shuffle(arr integer[]) RETURNS integer[] AS $$
+DECLARE
+  len INTEGER := array_length(arr, 1);
+  i INTEGER;
+  j INTEGER;
+  tmp INTEGER;
+BEGIN
+  IF len IS NULL THEN RETURN arr; END IF;
+  FOR i IN REVERSE len..2 LOOP
+    j := floor(random() * i + 1);
+    tmp := arr[i];
+    arr[i] := arr[j];
+    arr[j] := tmp;
+  END LOOP;
+  RETURN arr;
+END;
+$$ LANGUAGE plpgsql;
 
--- class-3: 40% enrollment (12 students out of 30 capacity)
-INSERT INTO student_preferred_seats (student_id, class_id, preferred_seat_number) VALUES 
-(7, 'class-3', 12),   -- Zest
-(8, 'class-3', 25),   -- James
-(9, 'class-3', 7),    -- Sarah
-(10, 'class-3', 19),  -- Michael
-(11, 'class-3', 2),   -- Emma
-(12, 'class-3', 30),  -- David
-(13, 'class-3', 14),  -- Lisa
-(14, 'class-3', 6),   -- Robert
-(19, 'class-3', 17),  -- Ava in class-3 - multi-class
-(20, 'class-3', 4),   -- Isabella in class-3 - multi-class
-(24, 'class-3', 11),  -- Noah in class-3 - multi-class
-(25, 'class-3', 23);  -- Liam in class-3 - multi-class
+-- Assign students to classes with preferred seat numbers as specified
+-- class-1: 0% of 30 (0 students)
+-- class-2: 90% of 30 (27 students), random seat 1-30, random student_id
+-- class-3: 60% of 30 (18 students), random seat 1-30, random student_id
+-- class-4: 40% of 30 (12 students), random seat 1-30, random student_id
+-- class-5: 20% of 30 (6 students), random seat 1-30, random student_id
 
--- class-4: 60% enrollment (8 students out of 30 capacity)
-INSERT INTO student_preferred_seats (student_id, class_id, preferred_seat_number) VALUES 
-(19, 'class-4', 11),  -- Ava
-(20, 'class-4', 27),  -- Isabella
-(21, 'class-4', 5),   -- Lucas
-(22, 'class-4', 18),  -- Mia
-(23, 'class-4', 1),   -- Logan
-(28, 'class-4', 13),  -- William
-(29, 'class-4', 29),  -- Alexander
-(30, 'class-4', 9);   -- Charlotte
+DO $$
+DECLARE
+  all_student_ids integer[] := ARRAY(SELECT generate_series(1, 35));
+  class_ids text[] := ARRAY['class-1', 'class-2', 'class-3', 'class-4', 'class-5'];
+  class_counts integer[] := ARRAY[0, 30, 30, 30, 30];
+  seat_list integer[];
+  selected_ids integer[];
+BEGIN
+  FOR class_idx IN 1..array_length(class_ids, 1) LOOP
+    selected_ids := (SELECT array_shuffle(all_student_ids))[1:class_counts[class_idx]];
 
--- class-5: 80% enrollment (12 students out of 30 capacity)
-INSERT INTO student_preferred_seats (student_id, class_id, preferred_seat_number) VALUES 
-(41, 'class-5', 23),  -- Luke
-(42, 'class-5', 4),   -- Elizabeth
-(43, 'class-5', 16),  -- Gabriel
-(44, 'class-5', 28),  -- Sofia
-(45, 'class-5', 10),  -- Samuel
-(46, 'class-5', 21),  -- Avery
-(47, 'class-5', 8),   -- Anthony
-(48, 'class-5', 17),  -- Ella
-(49, 'class-5', 26),  -- Christopher
-(50, 'class-5', 3),   -- Madison
-(1, 'class-5', 20),   -- Philip - multi-class
-(2, 'class-5', 24);   -- Darrell - multi-class
+    seat_list := array_shuffle(ARRAY(SELECT generate_series(1, 30)));
 
--- Multi-class preferred seats
--- Add some students from class-3 to class-2  
-INSERT INTO student_preferred_seats (student_id, class_id, preferred_seat_number) VALUES 
-(7, 'class-2', 11),   -- Zest in class-2 - multi-class
-(8, 'class-2', 29),   -- James in class-2 - multi-class
-(9, 'class-2', 5),    -- Sarah in class-2 - multi-class
-(10, 'class-2', 17),  -- Michael in class-2 - multi-class
-(11, 'class-2', 26);  -- Emma in class-2 - multi-class
+    FOR i IN 1..class_counts[class_idx] LOOP
+      INSERT INTO student_preferred_seats (student_id, class_id, preferred_seat_number)
+      VALUES (
+        selected_ids[i],
+        class_ids[class_idx],
+        seat_list[i]
+      );
+    END LOOP;
+  END LOOP;
+END $$;
 
--- Add some students from class-5 to class-4
-INSERT INTO student_preferred_seats (student_id, class_id, preferred_seat_number) VALUES 
-(41, 'class-4', 3),   -- Luke in class-4 - multi-class
-(42, 'class-4', 7),   -- Elizabeth in class-4 - multi-class
-(43, 'class-4', 20);  -- Gabriel in class-4 - multi-class
-
--- Add some students from class-2 to class-3
-INSERT INTO student_preferred_seats (student_id, class_id, preferred_seat_number) VALUES 
-(1, 'class-3', 10),   -- Philip in class-3 - multi-class
-(2, 'class-3', 22);   -- Darrell in class-3 - multi-class
-
--- Add some students from class-3 to class-4
-INSERT INTO student_preferred_seats (student_id, class_id, preferred_seat_number) VALUES 
-(7, 'class-4', 6),    -- Zest in class-4 - multi-class
-(8, 'class-4', 24);   -- James in class-4 - multi-class
-
--- Add some students from class-4 to class-5
-INSERT INTO student_preferred_seats (student_id, class_id, preferred_seat_number) VALUES 
-(19, 'class-5', 12),  -- Ava in class-5 - multi-class
-(20, 'class-5', 30);  -- Isabella in class-5 - multi-class
+-- Optionally, drop the shuffle function if you don't want it to persist:
+-- DROP FUNCTION IF EXISTS array_shuffle(integer[]);
 
 -- Basic health check table to verify database connection
 CREATE TABLE IF NOT EXISTS health_check (

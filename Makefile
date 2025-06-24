@@ -1,7 +1,8 @@
 # ClassSwift Teacher Dashboard - Makefile
 
 .PHONY: help dev up down logs clean backend-only frontend-only status \
-        docker-build docker-build-prod be-unit-test be-integration-test be-e2e-test
+        docker-build docker-build-prod be-unit-test be-integration-test be-e2e-test \
+        fe-test-run fe-test-coverage unit-test-all
 
 # Default target
 help: ## Show available commands
@@ -13,8 +14,14 @@ help: ## Show available commands
 	@echo "🐳 Docker Commands:"
 	@grep -E '^(docker-.*):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
-	@echo "🧪 Docker Test Commands:"
+	@echo "🧪 Backend Test Commands:"
 	@grep -E '^(be-unit-test|be-integration-test|be-e2e-test):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@echo ""
+	@echo "🧪 Frontend Test Commands:"
+	@grep -E '^(fe-test-run|fe-test-coverage):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
+	@echo ""
+	@echo "🧪 Combined Test Commands:"
+	@grep -E '^(unit-test-all):.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-25s %s\n", $$1, $$2}'
 	@echo ""
 
 # =============================================================================
@@ -77,7 +84,7 @@ docker-build-prod: ## Build Docker images for production
 
 
 # =============================================================================
-# Docker Test Commands
+# Backend Test Commands
 # =============================================================================
 
 be-unit-test: ## Run all Go backend unit tests (excluding integration/e2e)
@@ -92,3 +99,27 @@ be-e2e-test: ## Run backend e2e tests with test server
 	docker-compose -f ./backend/tests/docker/docker-compose.test.yml up -d
 	cd ./backend && go test -count=1 ./tests/e2e/...
 	docker-compose -f ./backend/tests/docker/docker-compose.test.yml down
+
+# =============================================================================
+# Frontend Test Commands
+# =============================================================================
+
+fe-test-run: ## Run frontend tests once
+	@echo "🧪 Running frontend tests once..."
+	cd ./frontend && npm run test:run
+
+fe-test-coverage: ## Run frontend tests with coverage report
+	@echo "🧪 Running frontend tests with coverage..."
+	cd ./frontend && npm run test:coverage
+
+# =============================================================================
+# Combined Test Commands
+# =============================================================================
+
+unit-test-all: ## Run all tests (backend + frontend)
+	@echo "🧪 Running all backend and frontend tests..."
+	@echo "📋 Running backend unit tests..."
+	@make be-unit-test
+	@echo "📋 Running frontend tests..."
+	@make fe-test-run
+	@echo "✅ All tests completed!"

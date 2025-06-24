@@ -45,7 +45,7 @@ export const StudentCard: React.FC<StudentCardProps> = ({
           $type="decrease" 
           $disabled={student.isGuest || student.score <= 0}
           disabled={student.isGuest || student.score <= 0}
-          onClick={() => !student.isGuest && student.score > 0 && onUpdateScore(student.id, -1)}
+          onClick={() => !student.isGuest && student.score > 0 && student.id && onUpdateScore(student.id, -1)}
         >
           -1
         </StyledScoreButton>
@@ -56,7 +56,7 @@ export const StudentCard: React.FC<StudentCardProps> = ({
           $type="increase" 
           $disabled={student.isGuest || student.score >= 100}
           disabled={student.isGuest || student.score >= 100}
-          onClick={() => !student.isGuest && student.score < 100 && onUpdateScore(student.id, 1)}
+          onClick={() => !student.isGuest && student.score < 100 && student.id && onUpdateScore(student.id, 1)}
         >
           +1
         </StyledScoreButton>

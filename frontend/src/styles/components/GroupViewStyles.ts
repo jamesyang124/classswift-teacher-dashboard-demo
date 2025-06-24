@@ -18,6 +18,7 @@ export const StyledGroupContainer = styled.div`
   border-radius: 12px;
 
   max-height: 400px;
+  height: 400px;
   overflow-y: auto;
 
   margin-right: 10px;

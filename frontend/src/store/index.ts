@@ -1,12 +1,10 @@
 import { configureStore } from '@reduxjs/toolkit';
-import classReducer from './slices/classSlice';
-import studentReducer from './slices/studentSlice';
+import classesReducer from './slices/classSlice';
 import websocketReducer from './slices/websocketSlice';
 
 export const store = configureStore({
   reducer: {
-    class: classReducer,
-    student: studentReducer,
+    classes: classesReducer,
     websocket: websocketReducer,
   },
   middleware: (getDefaultMiddleware) =>

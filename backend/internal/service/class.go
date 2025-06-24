@@ -52,32 +52,34 @@ func GetPreferredSeatByStudentAndClass(db *gorm.DB, studentID uint, classID stri
 	return &preferredSeat, nil
 }
 
-// JoinStudentToClass finds or creates a student and returns their preferred seat info for the class.
-// No seat assignment logic - just fetch/insert student and get their preferred seat if exists.
-func JoinStudentToClass(db *gorm.DB, studentName string, classID string) (*model.Student, *model.StudentPreferredSeat, error) {
+// FindStudentPreferredSeat looks up a student by name and returns their preferred seat info for the class.
+// If the student is not registered, returns (nil, nil, nil) to indicate a guest. Does not create a student.
+func FindStudentPreferredSeat(db *gorm.DB, studentName string, classID string) (*model.Student, *model.StudentPreferredSeat, error) {
 	var student *model.Student
 	var preferredSeat *model.StudentPreferredSeat
 
 	err := db.Transaction(func(tx *gorm.DB) error {
-		// Find or create the student
+		// Try to find the student
 		var err error
 		student, err = GetStudentByName(tx, studentName)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				// Create new student
-				student = &model.Student{
-					Name: studentName,
-				}
-				if err := CreateStudent(tx, student); err != nil {
-					return err
-				}
-			} else {
-				return err
+				// Student not registered: treat as guest (do not create student)
+				student = nil
+				preferredSeat = nil
+				return nil
 			}
+			return err
 		}
 
-		// Check if student has a preferred seat in this class
-		preferredSeat, err = GetPreferredSeatByStudentAndClass(tx, student.ID, classID)
+		// Fetch the class to get its internal ID
+		class, err := GetClassByPublicID(tx, classID)
+		if err != nil {
+			return err
+		}
+
+		// Check if student has a preferred seat in this class (using internal class ID)
+		preferredSeat, err = GetPreferredSeatByStudentAndClass(tx, student.ID, class.ID)
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}

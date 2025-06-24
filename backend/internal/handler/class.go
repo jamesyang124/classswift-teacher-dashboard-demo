@@ -101,7 +101,7 @@ func GetClassQRCode(c *gin.Context) {
 // HandleStudentJoin handles GET /api/v1/classes/:classId/join
 func HandleStudentJoin(c *gin.Context) {
 	db := database.GetDB()
-	classID := c.Param("classId")
+	classPublicID := c.Param("classId")
 
 	studentName := c.GetHeader("X-Student-Name")
 	if studentName == "" {
@@ -113,8 +113,8 @@ func HandleStudentJoin(c *gin.Context) {
 		return
 	}
 
-	// Step 1 & 2: Find/create student and get their preferred seat
-	student, preferredSeat, err := service.JoinStudentToClass(db, studentName, classID)
+	// Find student and get their preferred seat
+	student, preferredSeat, err := service.FindStudentPreferredSeat(db, studentName, classPublicID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.APIResponse{
 			Success: false,
@@ -126,22 +126,25 @@ func HandleStudentJoin(c *gin.Context) {
 
 	// Prepare joining student data
 	seatNumber := 0
-	if preferredSeat != nil {
-		seatNumber = preferredSeat.PreferredSeatNumber
-	}
-
 	joiningStudentData := map[string]interface{}{
-		"id":         student.ID,
-		"name":       student.Name,
+		"name":       studentName,
 		"seatNumber": seatNumber,
 	}
+	if preferredSeat != nil {
+		seatNumber = preferredSeat.PreferredSeatNumber
+		joiningStudentData["seatNumber"] = seatNumber
+	}
+	// If student is registered, add id
+	if student != nil {
+		joiningStudentData["id"] = student.ID
+	}
 
-	// Step 4: Broadcast WebSocket message
+	// Broadcast WebSocket message
 	classUpdateData := map[string]interface{}{
 		"joiningStudent": joiningStudentData,
 	}
 
-	service.BroadcastClassUpdate(classID, "class_updated", classUpdateData)
+	service.BroadcastClassUpdate(classPublicID, "class_updated", classUpdateData)
 
 	c.Redirect(http.StatusFound, config.ClassRedirectionBaseURL())
 }

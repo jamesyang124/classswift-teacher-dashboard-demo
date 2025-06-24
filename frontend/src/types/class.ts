@@ -17,3 +17,20 @@ export interface ClassResponse {
   class: ClassInfo;
   joinLink: string;
 }
+
+export interface ClassSeatMap {
+  [seatNumber: number]: {
+    studentId?: number;
+    studentName: string;
+    isGuest: boolean;
+    isEmpty: boolean;
+    score: number;
+  };
+}
+
+export interface ClassWithSeatMap extends ClassInfo {
+  seatMap: ClassSeatMap;
+  totalCapacity: number;
+  availableSlots: number;
+  initialized?: boolean; // Use this flag to track initialization
+}

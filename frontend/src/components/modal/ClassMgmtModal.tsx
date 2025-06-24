@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useEffect, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import styled from 'styled-components';
 import { TabNavigation, StudentGrid, GroupView } from '../student';
 import { 
@@ -11,10 +11,14 @@ import {
  } from '../../styles/components';
 import { IoPersonSharp } from "react-icons/io5";
 import { useWebSocket } from '../../hooks/useWebSocket';
-import { useSeatUpdates } from '../../hooks/useSeatUpdates';
-import { clearClassSeats } from '../../store/slices/classSlice';
-import { updateClassCapacity, updateStudents, clearAllScores } from '../../store/slices/studentSlice';
-import type { RootState, AppDispatch } from '../../store';
+import { useClassInfo } from '../../hooks/useClassInfo';
+import { 
+  syncWithInitialStudents, 
+  updateSeatFromWebSocket,
+  updateStudentScore,
+  clearAllScores
+} from '../../store/slices/classSlice';
+import type { AppDispatch } from '../../store';
 
 interface ClassMgmtModalProps {
   onClose?: () => void;
@@ -23,76 +27,89 @@ interface ClassMgmtModalProps {
 
 const ClassMgmtModal: React.FC<ClassMgmtModalProps> = ({ onClose, classId }) => {
   const dispatch = useDispatch<AppDispatch>();
-  // Use selector to get classInfo, loading, error from Redux (populated by parent or useClassInfo in parent)
-  const { classInfo, loading, error } = useSelector((state: RootState) => state.class);
-  const { students, totalCapacity, availableSlots } = useSelector((state: RootState) => state.student);
+  
+  // Use the new classes store via useClassInfo hook
+  const { 
+    classInfo, 
+    loading, 
+    error, 
+    seatMap, 
+    totalCapacity
+  } = useClassInfo(classId);
 
   const [activeTab, setActiveTab] = useState<'student' | 'group'>('student');
   const { connect, lastMessage } = useWebSocket();
-  // useSeatUpdates should always be in sync with students from Redux
-  const seatUpdates = useSeatUpdates();
-  const { updateMultipleSeats, getSeatUpdate, hasAnimation, clearUpdates, syncWithInitialStudents } = seatUpdates;
 
-  // Keep seatUpdates in sync with students from Redux after fetchClassInfoAndStudents
-  // Use syncWithInitialStudents for initial load (NO animation)
-  const initialSyncRef = useRef(false);
+  // Initialize seats only on first time opening - subsequent opens preserve layout
   useEffect(() => {
-    if (students && students.length > 0 && !initialSyncRef.current) {
-      syncWithInitialStudents(students);
-      initialSyncRef.current = true;
+    if (classId && totalCapacity > 0) {
+      dispatch(syncWithInitialStudents({ classId, capacity: totalCapacity, forceReset: false }));
     }
-  }, [students, syncWithInitialStudents]);
+  }, [classId, totalCapacity, dispatch]);
 
+  // Connect to websocket when modal opens
   useEffect(() => {
     connect(classId);
-    // Reset all scores when modal opens
-    dispatch(clearAllScores());
-    return () => {
-      clearUpdates();
-      initialSyncRef.current = false;
-    };
-  }, [classId, connect, clearUpdates, dispatch]);
+  }, [classId, connect]);
 
-  // Note: WebSocket connection persists across modal open/close cycles
-  // Only disconnect when user explicitly leaves the class or app closes
-
-  // Handle WebSocket messages with seat updates
+  // Handle websocket class updates
   useEffect(() => {
     if (lastMessage && lastMessage.type === 'class_updated') {
       console.log('🔄 WebSocket class_updated received:', lastMessage.data);
-      // Update class capacity metrics from WebSocket
-      if (lastMessage.data.totalCapacity !== undefined) {
-        dispatch(updateClassCapacity({
-          totalCapacity: lastMessage.data.totalCapacity,
-          enrolledCount: lastMessage.data.enrolledCount,
-          availableSlots: lastMessage.data.availableSlots,
-        }));
-      }
-      // Update seat information using the hook (WITH animation for WebSocket updates)
-      if (lastMessage.data.students && Array.isArray(lastMessage.data.students)) {
-        // First update Redux store
-        dispatch(updateStudents(lastMessage.data.students));
-        // Then trigger animations for seat changes
-        updateMultipleSeats(lastMessage.data.students);
+      if (lastMessage.data.joiningStudent) {
+        const student = lastMessage.data.joiningStudent;
+        if (student && student.seatNumber !== undefined && student.seatNumber !== null && student.name) {
+          // Dispatch to the classes store to update seat map
+          dispatch(updateSeatFromWebSocket({
+            classId,
+            joiningStudent: {
+              name: student.name,
+              seatNumber: student.seatNumber,
+              id: student.id // Will be undefined for guest students
+            }
+          }));
+        }
       }
     }
-  }, [lastMessage, dispatch, updateMultipleSeats]);
+  }, [lastMessage, dispatch, classId]);
 
-  const formatSeatNumber = (id: number) => {
-    return id.toString().padStart(2, '0');
-  };
+  const formatSeatNumber = (id: number) => id.toString().padStart(2, '0');
 
   const handleClearAllScores = () => {
-    dispatch(clearAllScores());
+    dispatch(clearAllScores(classId));
   };
 
-  // Replace handleResetAllSeats to use the async thunk for backend reset
-  const handleResetAllSeats = async () => {
-    // Dispatch the async thunk to clear seats in backend and broadcast
-    await dispatch(clearClassSeats(classId));
-    // Also clear seat updates (for local UI animation reset)
-    clearUpdates();
-    initialSyncRef.current = false;
+  const handleResetAllSeats = () => {
+    // Reset seats entirely on client side - no backend API call needed
+    dispatch(syncWithInitialStudents({ classId, capacity: totalCapacity, forceReset: true }));
+  };
+
+  // Helper function to get seat data from the seat map
+  const getSeatData = (seatNumber: number) => {
+    const seat = seatMap[seatNumber];
+    if (!seat || seat.isEmpty) {
+      return {
+        name: '',
+        seatNumber,
+        score: 0,
+        isGuest: true,
+        isEmpty: true
+      };
+    }
+    
+    return {
+      id: seat.studentId,
+      name: seat.studentName,
+      seatNumber,
+      score: seat.score,
+      isGuest: seat.isGuest,
+      isEmpty: seat.isEmpty
+    };
+  };
+
+  // Helper function to handle score updates
+  const handleUpdateScore = (studentId: number, change: number) => {
+    dispatch(updateStudentScore({ classId, studentId, change }));
   };
 
   const renderContent = () => {
@@ -100,23 +117,24 @@ const ClassMgmtModal: React.FC<ClassMgmtModalProps> = ({ onClose, classId }) => 
       return (
         <GroupView 
           formatSeatNumber={formatSeatNumber}
-          getSeatUpdate={getSeatUpdate}
-          hasAnimation={hasAnimation}
+          getSeatData={getSeatData}
+          totalCapacity={totalCapacity}
+          handleUpdateScore={handleUpdateScore}
         />
       );
     }
-
     return (
       <StudentGrid 
         formatSeatNumber={formatSeatNumber}
-        getSeatUpdate={getSeatUpdate}
-        hasAnimation={hasAnimation}
+        getSeatData={getSeatData}
+        totalCapacity={totalCapacity}
+        handleUpdateScore={handleUpdateScore}
       />
     );
   };
 
-  // Calculate seated count (students who are not guests and have a seatNumber assigned)
-  const seatedCount = totalCapacity - availableSlots;
+  // Calculate seated count directly from seat map to ensure accuracy
+  const seatedCount = Object.values(seatMap).filter(seat => !seat.isEmpty).length;
 
   return (
     <StyledModalContent>
@@ -130,16 +148,13 @@ const ClassMgmtModal: React.FC<ClassMgmtModalProps> = ({ onClose, classId }) => 
           <StudentCount><IoPersonSharp /> {seatedCount}/{totalCapacity}</StudentCount>
         </ClassInfo>
       </ModalTitle>
-        
       <TabNavigation 
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onClearAllScores={handleClearAllScores}
         onResetAllSeats={handleResetAllSeats}
       />
-
       {renderContent()}
-      
     </StyledModalContent>
   );
 };

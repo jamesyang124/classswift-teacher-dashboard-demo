@@ -1,21 +1,10 @@
 export interface Student {
-  id: number;
+  id?: number; // Optional for guest users
   name: string;
-  seatNumber?: number;
+  seatNumber: number;
   score: number;
   isGuest: boolean;
+  isEmpty?: boolean; // For empty seats
   createdAt?: string;
   updatedAt?: string;
-}
-
-export interface StudentWithEnrollment extends Student {
-  classId: string;
-  enrolledAt: string;
-}
-
-export interface StudentsResponse {
-  students: StudentWithEnrollment[];
-  totalCapacity: number;
-  enrolledCount: number;
-  availableSlots: number;
 }

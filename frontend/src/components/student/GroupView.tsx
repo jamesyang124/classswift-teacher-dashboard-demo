@@ -1,5 +1,4 @@
 import React from 'react';
-import { useSelector, useDispatch } from 'react-redux';
 import { 
   StyledGroupContainer, 
   StyledGroupSection, 
@@ -8,106 +7,61 @@ import {
   StyledScrollContainer
 } from '../../styles/components';
 import { StudentCard } from './StudentCard';
-import { updateStudentScore } from '../../store/slices/studentSlice';
-import type { RootState, AppDispatch } from '../../store';
 import type { Student } from '../../types/student';
 
 interface GroupViewProps {
   formatSeatNumber: (seatNumber: number) => string;
-  getSeatUpdate: (seatNumber: number) => Student | undefined;
-  hasAnimation: (seatNumber: number) => boolean;
+  getSeatData: (seatNumber: number) => Student;
+  totalCapacity: number;
+  handleUpdateScore: (studentId: number, change: number) => void;
 }
 
 export const GroupView: React.FC<GroupViewProps> = ({
   formatSeatNumber,
-  getSeatUpdate,
-  hasAnimation
+  getSeatData,
+  totalCapacity,
+  handleUpdateScore
 }) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { students, totalCapacity, loading, error } = useSelector((state: RootState) => state.student);
-
-  const handleUpdateScore = (studentId: number, change: number) => {
-    dispatch(updateStudentScore({ studentId, change }));
-  };
 
   const createGroups = () => {
-    // Get enrolled students and guest seats, both sorted by seat number
-    const enrolledStudents = [];
-    const guestSeats = [];
-    
-    // Create a map of seat number to student
-    const seatMap = new Map<number, Student>();
-    students.forEach(student => {
-      if (student.seatNumber !== null && student.seatNumber !== undefined) {
-        seatMap.set(student.seatNumber, student);
-      }
-    });
-    
-    // Generate all seats up to capacity with real-time updates
+    // Group students by seat number, only if not empty
+    const students: Student[] = [];
     for (let seatNumber = 1; seatNumber <= totalCapacity; seatNumber++) {
-      // Check for real-time seat updates first, but prefer Redux store for scores
-      const seatUpdate = getSeatUpdate(seatNumber);
-      const reduxStudent = seatMap.get(seatNumber);
-      
-      // Use Redux student if available (for up-to-date scores), otherwise use seat update
-      const student = reduxStudent || seatUpdate;
-      
-      if (student && !student.isGuest) {
-        enrolledStudents.push(student);
-      } else {
-        // Create guest seat placeholder
-        const guestSeat: Student = {
-          id: seatNumber,
-          name: 'Guest',
-          seatNumber: seatNumber,
-          score: 0,
-          isGuest: true
-        };
-        guestSeats.push(guestSeat);
+      const student = getSeatData(seatNumber);
+      if (!student.isEmpty) {
+        students.push(student);
       }
     }
-    
-    // Combine enrolled students first, then guest seats
-    const allStudents = [...enrolledStudents, ...guestSeats];
+    // Group into arrays of 5 by seat number order
     const groups = [];
-    
-    for (let i = 0; i < allStudents.length; i += 5) {
-      groups.push(allStudents.slice(i, i + 5));
+    for (let i = 0; i < students.length; i += 5) {
+      groups.push(students.slice(i, i + 5));
     }
-    
     return groups;
   };
-
-  if (loading) {
-    return <div>Loading students...</div>;
-  }
-
-  if (error) {
-    return <div>Error: {error}</div>;
-  }
 
   const groups = createGroups();
 
   return (
     <StyledScrollContainer>
-    <StyledGroupContainer>
-      {groups.map((group, groupIndex) => (
-        <StyledGroupSection key={groupIndex}>
-          <StyledGroupTitle>Group {groupIndex + 1}</StyledGroupTitle>
-          <StyledGroupStudents>
-            {group.map((student) => (
-              <StudentCard 
-                key={student.isGuest ? `gps-${student.seatNumber}` : `gpe-${student.id}`}
-                student={student}
-                onUpdateScore={handleUpdateScore}
-                formatSeatNumber={formatSeatNumber}
-                hasRealtimeUpdate={hasAnimation(student.seatNumber!)}
-              />
-            ))}
-          </StyledGroupStudents>
-        </StyledGroupSection>
-      ))}
-    </StyledGroupContainer>
+      <StyledGroupContainer>
+        {groups.map((group, groupIndex) => (
+          <StyledGroupSection key={groupIndex}>
+            <StyledGroupTitle>Group {groupIndex + 1}</StyledGroupTitle>
+            <StyledGroupStudents>
+              {group.map((student) => (
+                <StudentCard 
+                  key={student.id ? `gpe-${student.id}` : `gps-${student.seatNumber}`}
+                  student={student}
+                  onUpdateScore={student.id ? handleUpdateScore : () => {}}
+                  formatSeatNumber={formatSeatNumber}
+                  hasRealtimeUpdate={false} // TODO: Implement animation detection
+                />
+              ))}
+            </StyledGroupStudents>
+          </StyledGroupSection>
+        ))}
+      </StyledGroupContainer>
     </StyledScrollContainer>
   );
 };
