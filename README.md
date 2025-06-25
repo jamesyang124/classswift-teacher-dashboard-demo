@@ -134,6 +134,75 @@ The application features a clean dual-modal interface:
 
 *See [WIRE_FRAME.png](docs/WIRE_FRAME.png) for complete visual reference.*
 
+## Demo Instructions
+
+### Getting Started with Demo Mode
+
+1. **Start the application** in demo mode:
+   ```bash
+   make dev
+   # or
+   docker-compose up --watch
+   ```
+
+2. **Access the dashboard**: Open http://localhost:5173
+
+### Demo Features
+
+#### Right Modal Dropdown Menu Functions
+
+You can access various classroom management functions using the **right modal dropdown menu** by following steps:
+
+1. **Open Class**: Click on any class card to open both modals
+2. **Access Menu**: In the right modal, click the dropdown menu (⋮) next to the tabs
+3. **Available Functions**:
+
+**Student Addition:**
+   - **Add 1 Guest** - Adds a single guest student (gray card, limited features)
+   - **Add 1 Enrolled** - Adds a single enrolled student (blue card, full features)  
+   - **Add 10 Students** - Bulk add 10 enrolled students for testing
+   - **Add 30 Students** - Bulk add 30 enrolled students for full classroom simulation
+
+**Classroom Management:**
+   - **Clear All Scores** - Resets all student points to zero (useful for new activities)
+   - **Reset All Seats** - Removes all students from the classroom and clears the grid
+
+Students appear immediately in the 5-column grid with real-time updates. The menu closes automatically when any option is selected.
+
+#### Scan Mode vs Demo Mode Toggle
+
+Each class card includes a **mode toggle button** (only visible when `VITE_DEMO_MODE=true`):
+
+- **📷 Scan Mode** (Default):
+  - QR code is static and non-clickable
+  - Students must physically scan the QR code to join
+  - QR code redirects to: `https://www.classswift.viewsonic.io` (production URL)
+  - Production-ready behavior for real classrooms
+
+- **📱 Demo Mode**:
+  - QR code becomes clickable for simulation
+  - Click the QR code to simulate a student joining
+  - QR code points to: `http://localhost:3000/api/v1/classes/{classId}/join` (backend API)
+  - Perfect for demonstrations and testing
+
+**To switch modes:**
+1. Locate the mode toggle button next to "Created: [date]" on each class card
+2. Click to toggle between "📷 Scan Mode" and "📱 Demo Mode"
+3. Open the class to see the QR code behavior change
+
+**Technical Details:**
+- **Scan Mode** (`mode=direct`): QR code contains production ClassSwift URL for real device scanning
+- **Demo Mode** (`mode=normal`): QR code contains localhost API endpoint that triggers backend join process
+- When clicked in Demo Mode, makes HTTP request to `/api/v1/classes/{classId}/join` with random student name
+- Backend processes join request and redirects to production URL while broadcasting WebSocket update to dashboard
+
+#### Real-time Student Management
+
+- **Point System**: Use +/- buttons to award or deduct points
+- **Visual Feedback**: Students show colored point badges (green/red)
+- **Group Formation**: Students automatically organize into groups of 5
+- **Guest vs Enrolled**: Different card colors and capabilities
+
 ## Development Commands
 
 Simple Makefile commands for common Docker operations:

@@ -47,7 +47,7 @@ export const config = {
   
   // Feature Flags
   features: {
-    isDemoMode: env.MODE === 'development' || env.VITE_DEMO_MODE === 'true',
+    isDemoMode: env.VITE_DEMO_MODE === 'true',
     isProduction: env.MODE === 'production',
     isDevelopment: env.MODE === 'development',
   },
