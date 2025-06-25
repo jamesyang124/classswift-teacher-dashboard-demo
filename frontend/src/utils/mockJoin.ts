@@ -79,4 +79,77 @@ export const mockStudentJoin = async (classId: string): Promise<void> => {
   } catch (error) {
     console.error('Mock join error:', error);
   }
+};
+
+// Add specific student type joining functions
+export const mockGuestJoin = async (classId: string): Promise<void> => {
+  if (!classId) return;
+
+  try {
+    if (!usedNamesMap[classId]) {
+      usedNamesMap[classId] = new Set();
+    }
+    const usedNames = usedNamesMap[classId];
+    const availableGuests = NOT_ENROLLED_NAMES.filter(name => !usedNames.has(name));
+    
+    if (availableGuests.length === 0) {
+      console.warn('No more guest names available');
+      return;
+    }
+
+    const name = getRandomFromArray(NOT_ENROLLED_NAMES, usedNames);
+    usedNames.add(name);
+    console.log(`Mock guest joining: ${name}`);
+    const joinResponse = await mockApiJoinRequest(classId, name);
+    if (joinResponse.status === 302 || joinResponse.status === 200 || joinResponse.status === 0) {
+      console.log(`✅ ${name} (guest) attempt to join!`);
+    } else {
+      console.warn(`❌ Failed to join: ${name} (guest)`);
+    }
+  } catch (error) {
+    console.error('Mock guest join error:', error);
+  }
+};
+
+export const mockEnrolledJoin = async (classId: string): Promise<void> => {
+  if (!classId) return;
+
+  try {
+    if (!usedNamesMap[classId]) {
+      usedNamesMap[classId] = new Set();
+    }
+    const usedNames = usedNamesMap[classId];
+    const availableEnrolled = ALL_ENROLLED_STUDENT_NAMES.filter(name => !usedNames.has(name));
+    
+    if (availableEnrolled.length === 0) {
+      console.warn('No more enrolled student names available');
+      return;
+    }
+
+    const name = getRandomFromArray(ALL_ENROLLED_STUDENT_NAMES, usedNames);
+    usedNames.add(name);
+    console.log(`Mock enrolled student joining: ${name}`);
+    const joinResponse = await mockApiJoinRequest(classId, name);
+    if (joinResponse.status === 302 || joinResponse.status === 200 || joinResponse.status === 0) {
+      console.log(`✅ ${name} (enrolled) attempt to join!`);
+    } else {
+      console.warn(`❌ Failed to join: ${name} (enrolled)`);
+    }
+  } catch (error) {
+    console.error('Mock enrolled join error:', error);
+  }
+};
+
+export const mockMultipleStudentJoin = async (classId: string, count: number): Promise<void> => {
+  if (!classId || count <= 0) return;
+
+  console.log(`Adding ${count} random students...`);
+  for (let i = 0; i < count; i++) {
+    await mockStudentJoin(classId);
+    // Small delay between joins to avoid overwhelming the system
+    if (i < count - 1) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+  }
+  console.log(`Finished adding ${count} students`);
 };  

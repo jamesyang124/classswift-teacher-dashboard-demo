@@ -153,6 +153,7 @@ const ClassMgmtModal: React.FC<ClassMgmtModalProps> = ({ onClose, classId }) => 
         onTabChange={setActiveTab}
         onClearAllScores={handleClearAllScores}
         onResetAllSeats={handleResetAllSeats}
+        classId={classId}
       />
       {renderContent()}
     </StyledModalContent>

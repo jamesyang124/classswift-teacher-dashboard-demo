@@ -12,7 +12,7 @@ import (
 func TestGenerateClassQRCode(t *testing.T) {
 	config.Init()
 	classID := "TESTCLASS123"
-	joinURL, base64QR, err := service.GenerateClassQRCode(classID)
+	joinURL, base64QR, err := service.GenerateClassQRCode(classID, false)
 
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)

@@ -10,8 +10,13 @@ import (
 )
 
 // GenerateClassQRCode generates a QR code (base64) and join URL for a class.
-func GenerateClassQRCode(classPublicID string) (joinURL string, base64QR string, err error) {
-	joinURL = fmt.Sprintf("%s/api/v1/classes/%s/join", config.BaseURL(), classPublicID)
+func GenerateClassQRCode(classPublicID string, isDirectMode bool) (joinURL string, base64QR string, err error) {
+	if isDirectMode {
+		joinURL = config.ClassRedirectionBaseURL()
+	} else {
+		joinURL = fmt.Sprintf("%s/api/v1/classes/%s/join", config.BaseURL(), classPublicID)
+	}
+	
 	qrBytes, err := qrcode.Encode(joinURL, qrcode.Medium, 256)
 	if err != nil {
 		return "", "", err

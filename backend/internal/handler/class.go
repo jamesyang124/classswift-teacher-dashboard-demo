@@ -74,7 +74,11 @@ func GetClassQRCode(c *gin.Context) {
 		return
 	}
 
-	joinURL, base64QR, err := service.GenerateClassQRCode(class.PublicID)
+	// Check mode query parameter
+	mode := c.Query("mode")
+	isDirectMode := mode == "direct"
+
+	joinURL, base64QR, err := service.GenerateClassQRCode(class.PublicID, isDirectMode)
 	if err != nil {
 		logger.Errorf("Failed to generate QR code: %v", err)
 		c.JSON(http.StatusInternalServerError, model.APIResponse{
