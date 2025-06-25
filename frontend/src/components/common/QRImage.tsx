@@ -1,31 +1,67 @@
-// Environment-aware QR Image component
-import React, { useState, useEffect } from 'react';
+// Simplified QR Image component
+import React from 'react';
+import styled from 'styled-components';
 import { StyledQRCodeImage } from '../../styles';
-import { createQRImageProps, type QRImageProps } from '../../utils/qrImageProps';
+import { useQRCode } from '../../hooks/useQRCode';
+import { mockStudentJoin } from '../../utils/mockJoin';
 
 interface QRImageComponentProps {
-  src: string;
   alt: string;
   classId: string;
+  isDirectMode: boolean;
 }
 
-/**
- * Smart QR Image component that automatically switches between:
- * - Development/Demo: Interactive with click simulation
- * - Production: Static display only
- */
-export const QRImage: React.FC<QRImageComponentProps> = React.memo(({ src, alt, classId }) => {
-  const [qrImageProps, setQrImageProps] = useState<QRImageProps | null>(null);
+export const QRImage: React.FC<QRImageComponentProps> = ({ alt, classId, isDirectMode = true }) => {
+  const { qrData, loading, error } = useQRCode(classId, isDirectMode);
 
-  useEffect(() => {
-    createQRImageProps(src, alt, classId).then(props => {
-      setQrImageProps(props);
-    });
-  }, [src, alt, classId]);
+  const handleQRClick = async () => {
+    if (isDirectMode) { // Direct mode - not clickable, just return
+      return;
+    }
+    // Demo mode - simulate scanning
+    console.log('🎯 QR Code clicked in demo mode - simulating student join');
+    await mockStudentJoin(classId);
+  };
 
-  if (!qrImageProps) {
-    return null; // or loading spinner
+  if (loading) {
+    return <div>Loading QR Code...</div>;
   }
 
-  return <StyledQRCodeImage {...qrImageProps} />;
-});
+  if (error) {
+    return <div>Error loading QR code: {error}</div>;
+  }
+
+  if (!qrData?.qrCodeBase64) {
+    return <div>No QR Code available</div>;
+  }
+
+  // In demo mode (!isDirectMode), make QR code clickable
+  if (!isDirectMode) {
+    return (
+      <ClickableQRImage 
+        src={qrData.qrCodeBase64}
+        alt={`${alt} (Click to simulate scan)`}
+        onClick={handleQRClick}
+        title="Click to simulate student joining via QR code"
+      />
+    );
+  }
+
+  // In scan mode (isDirectMode), normal static QR code - NOT clickable
+  return (
+    <StaticQRImage 
+      src={qrData.qrCodeBase64}
+      alt={alt}
+      title="Scan with your device camera"
+    />
+  );
+};
+
+const ClickableQRImage = styled(StyledQRCodeImage)`
+  cursor: pointer;
+`;
+
+const StaticQRImage = styled(StyledQRCodeImage)`
+  cursor: default;
+  pointer-events: none; /* Ensures no click events */
+`;

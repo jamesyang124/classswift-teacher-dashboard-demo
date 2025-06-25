@@ -16,10 +16,11 @@ interface ClassData {
 
 interface ClassInfoProps {
   classData: ClassData;
+  isDirectMode?: boolean;
 }
 
-export const ClassInfo: React.FC<ClassInfoProps> = ({ classData }) => {
-  const { qrData, loading } = useQRCode(classData.classId);
+export const ClassInfo: React.FC<ClassInfoProps> = ({ classData, isDirectMode = true }) => {
+  const { qrData, loading } = useQRCode(classData.classId, isDirectMode);
   
   const joinLink = qrData?.joinLink || classData.joinLink || '';
 

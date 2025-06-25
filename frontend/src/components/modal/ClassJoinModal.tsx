@@ -17,9 +17,10 @@ interface ClassJoinModalProps {
   onClose?: () => void;
   onBackToClassList?: () => void;
   classId: string;
+  isDirectMode?: boolean;
 }
 
-const ClassJoinModal: React.FC<ClassJoinModalProps> = ({ onClose, onBackToClassList, classId }) => {
+const ClassJoinModal: React.FC<ClassJoinModalProps> = ({ onClose, onBackToClassList, classId, isDirectMode = true }) => {
   const className = useSelector((state: RootState) => {
     const currentClassId = state.classes.currentClassId;
     return currentClassId ? state.classes.classes[currentClassId]?.name || '' : '';
@@ -36,10 +37,11 @@ const ClassJoinModal: React.FC<ClassJoinModalProps> = ({ onClose, onBackToClassL
       </StyledModalHeader>
 
       <StyledModalTitle>Join {classData.className}</StyledModalTitle>
-        <ClassInfo classData={classData} />
+        <ClassInfo classData={classData} isDirectMode={isDirectMode} />
         <QRCodeDisplay 
           classId={classData.classId}
           alt={`QR Code for joining ${classData.className}`}
+          isDirectMode={isDirectMode}
         />
 
         <StyledVersionInfo>Version {config.app.version}</StyledVersionInfo>

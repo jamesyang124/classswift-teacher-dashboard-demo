@@ -53,23 +53,23 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   };
 
   const handleAddGuest = async () => {
+    setIsMenuOpen(false); // Close menu immediately
     await mockGuestJoin(classId);
-    setIsMenuOpen(false);
   };
 
   const handleAddEnrolled = async () => {
+    setIsMenuOpen(false); // Close menu immediately
     await mockEnrolledJoin(classId);
-    setIsMenuOpen(false);
   };
 
   const handleAdd10Students = async () => {
+    setIsMenuOpen(false); // Close menu immediately
     await mockMultipleStudentJoin(classId, 10);
-    setIsMenuOpen(false);
   };
 
   const handleAdd30Students = async () => {
+    setIsMenuOpen(false); // Close menu immediately
     await mockMultipleStudentJoin(classId, 30);
-    setIsMenuOpen(false);
   };
 
   return (

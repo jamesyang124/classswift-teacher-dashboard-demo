@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { apiService } from '../services/api';
+import { config } from '../config/env';
 import type { ClassInfo } from '../types/class';
 
 interface ClassListProps {
   onSelectClass?: (classId: string) => void;
+  scanModes?: Record<string, boolean>;
+  onToggleMode?: (classId: string) => void;
+  getCurrentMode?: (classId: string) => boolean;
 }
 
-export const ClassList: React.FC<ClassListProps> = ({ onSelectClass }) => {
+export const ClassList: React.FC<ClassListProps> = ({ onSelectClass, onToggleMode, getCurrentMode }) => {
   const [classes, setClasses] = useState<ClassInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +36,13 @@ export const ClassList: React.FC<ClassListProps> = ({ onSelectClass }) => {
   const handleClassClick = (classId: string) => {
     if (onSelectClass) {
       onSelectClass(classId);
+    }
+  };
+
+  const handleModeToggle = (classId: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent class card click
+    if (onToggleMode) {
+      onToggleMode(classId);
     }
   };
 
@@ -60,26 +71,39 @@ export const ClassList: React.FC<ClassListProps> = ({ onSelectClass }) => {
         <EmptyMessage>No classes found</EmptyMessage>
       ) : (
         <ClassGrid>
-          {classes.map((classInfo) => (
-            <ClassCard
-              key={classInfo.publicId}
-              onClick={() => handleClassClick(classInfo.publicId)}
-              $isActive={classInfo.isActive}
-            >
-              <ClassHeader>
-                <ClassName>{classInfo.name}</ClassName>
-                <ClassStatus $isActive={classInfo.isActive}>
-                  {classInfo.isActive ? 'Active' : 'Inactive'}
-                </ClassStatus>
-              </ClassHeader>
-              <ClassDetails>
-                <ClassId>ID: {classInfo.publicId}</ClassId>
-                <ClassDate>
-                  Created: {new Date(classInfo.createdAt).toLocaleDateString()}
-                </ClassDate>
-              </ClassDetails>
-            </ClassCard>
-          ))}
+          {classes.map((classInfo) => {
+            const isScanMode = getCurrentMode ? getCurrentMode(classInfo.publicId) : true;
+            return (
+              <ClassCard
+                key={classInfo.publicId}
+                onClick={() => handleClassClick(classInfo.publicId)}
+                $isActive={classInfo.isActive}
+              >
+                <ClassHeader>
+                  <ClassName>{classInfo.name}</ClassName>
+                  <ClassStatus $isActive={classInfo.isActive}>
+                    {classInfo.isActive ? 'Active' : 'Inactive'}
+                  </ClassStatus>
+                </ClassHeader>
+                <ClassDetails>
+                  <ClassId>ID: {classInfo.publicId}</ClassId>
+                  <ClassDateRow>
+                    <ClassDate>
+                      Created: {new Date(classInfo.createdAt).toLocaleDateString()}
+                    </ClassDate>
+                    {config.features.isDemoMode && (
+                      <ModeToggleButton
+                        onClick={(e) => handleModeToggle(classInfo.publicId, e)}
+                        $isScanMode={isScanMode}
+                      >
+                        {isScanMode ? '📷 Scan Mode' : '📱 Demo Mode'}
+                      </ModeToggleButton>
+                    )}
+                  </ClassDateRow>
+                </ClassDetails>
+              </ClassCard>
+            );
+          })}
         </ClassGrid>
       )}
     </Container>
@@ -144,7 +168,7 @@ const ClassGrid = styled.div`
 const ClassCard = styled.div<{ $isActive: boolean }>`
   background: ${props => props.theme.colors.white};
   border-radius: ${props => props.theme.borderRadius.lg};
-  padding: ${props => props.theme.spacing.lg};
+  padding: 14px;
   box-shadow: ${props => props.theme.shadows.md};
   cursor: pointer;
   transition: all 0.2s ease;
@@ -199,4 +223,36 @@ const ClassId = styled.div`
 const ClassDate = styled.div`
   color: ${props => props.theme.colors.gray[600]};
   font-size: ${props => props.theme.typography.sizes.caption};
+`;
+
+const ClassDateRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: ${props => props.theme.spacing.sm};
+`;
+
+const ModeToggleButton = styled.button<{ $isScanMode: boolean }>`
+  background: ${props => props.$isScanMode ? '#2196F3' : '#FF9800'};
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  
+  &:hover {
+    background: ${props => props.$isScanMode ? '#1976D2' : '#F57C00'};
+    transform: translateY(-1px);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
 `;

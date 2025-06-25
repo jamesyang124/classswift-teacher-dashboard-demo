@@ -14,6 +14,7 @@ export const AppContent: React.FC<AppContentProps> = () => {
   const [showLeftModal, setShowLeftModal] = useState(false);
   const [showRightModal, setShowRightModal] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [directScanModes, setDirectScanModes] = useState<Record<string, boolean>>({});
   
   // Use useClassInfo hook when a class is selected (inside Provider context)
   useClassInfo(selectedClassId || '');
@@ -57,6 +58,18 @@ export const AppContent: React.FC<AppContentProps> = () => {
     setShowRightModal(true);
   };
 
+  // Get current mode for selected class (defaults to scan mode)
+  const getCurrentScanMode = (classId: string) => {
+    return directScanModes[classId] !== undefined ? directScanModes[classId] : true;
+  };
+
+  const handleModeToggle = (classId: string) => {
+    setDirectScanModes(prev => ({
+      ...prev,
+      [classId]: !getCurrentScanMode(classId)
+    }));
+  };
+
   const handleCloseLeftModal = () => {
     setShowLeftModal(false);
   };
@@ -74,14 +87,18 @@ export const AppContent: React.FC<AppContentProps> = () => {
   return (
     <AppContainer>
       <ClassListContainer>
-        <ClassList onSelectClass={handleSelectClass} />
+        <ClassList 
+          onSelectClass={handleSelectClass}
+          onToggleMode={handleModeToggle}
+          getCurrentMode={getCurrentScanMode}
+        />
       </ClassListContainer>
       
       {/* Modals overlay on top of class list */}
       {(showLeftModal || showRightModal) && (
         <ModalOverlay>
           <ModalContainer $showLeftModal={showLeftModal} $showRightModal={showRightModal}>
-            {showLeftModal && selectedClassId && <ClassJoinModal onClose={handleCloseLeftModal} onBackToClassList={handleBackToClassList} classId={selectedClassId} />}
+            {showLeftModal && selectedClassId && <ClassJoinModal onClose={handleCloseLeftModal} onBackToClassList={handleBackToClassList} classId={selectedClassId} isDirectMode={getCurrentScanMode(selectedClassId)} />}
             {showRightModal && selectedClassId && <ClassMgmtModal onClose={handleCloseRightModal} classId={selectedClassId} />}
           </ModalContainer>
         </ModalOverlay>

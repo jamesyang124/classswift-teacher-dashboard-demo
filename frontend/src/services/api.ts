@@ -23,8 +23,9 @@ export const apiService = {
     return response.json();
   },
 
-  async getClassQRCode(classId: string): Promise<QRCodeResponse> {
-    const response = await fetch(`${config.api.baseUrl}/classes/${classId}/qr`);
+  async getClassQRCode(classId: string, isDirectMode: boolean = false): Promise<QRCodeResponse> {
+    const queryParam = isDirectMode ? '?mode=direct' : '';
+    const response = await fetch(`${config.api.baseUrl}/classes/${classId}/qr${queryParam}`);
     
     if (!response.ok) {
       throw new Error(`Failed to fetch QR code: ${response.statusText}`);

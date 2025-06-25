@@ -40,7 +40,7 @@ services:
       - DATABASE_URL=postgres://classswift:password@db:5432/classswift_dev?sslmode=disable
       - REDIS_URL=redis://redis:6379
       - CORS_ORIGINS=http://localhost:5173
-      - CLASS_REDIRETION_BASE_URL=https://www.classswift.viewsonic.io
+      - CLASS_REDIRECTION_BASE_URL=https://www.classswift.viewsonic.io
     depends_on:
       db:
         condition: service_healthy

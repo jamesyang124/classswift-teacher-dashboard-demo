@@ -58,7 +58,7 @@ func Init() {
 			GinMode:                 getEnv("GIN_MODE", "release"),
 			Host:                    host,
 			TLSMode:                 tlsMode,
-			ClassRedirectionBaseURL: getEnv("CLASS_REDIRETION_BASE_URL", "https://www.classswift.viewsonic.io"),
+			ClassRedirectionBaseURL: getEnv("CLASS_REDIRECTION_BASE_URL", "https://www.classswift.viewsonic.io"),
 			BaseURL:                 baseURL,
 			CORSOrigins:             getEnv("CORS_ORIGINS", ""),
 		}
