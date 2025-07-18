@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { 
   StyledGroupContainer, 
   StyledGroupSection, 
@@ -22,9 +22,10 @@ export const GroupView: React.FC<GroupViewProps> = ({
   totalCapacity,
   handleUpdateScore
 }) => {
+  const noOpHandler = useCallback(() => {}, []);
 
-  const createGroups = () => {
-    // Group students by seat number, only if not empty
+  const groups = useMemo(() => {
+    // Group students by seat number, only if not empty - memoized for performance
     const students: Student[] = [];
     for (let seatNumber = 1; seatNumber <= totalCapacity; seatNumber++) {
       const student = getSeatData(seatNumber);
@@ -33,14 +34,12 @@ export const GroupView: React.FC<GroupViewProps> = ({
       }
     }
     // Group into arrays of 5 by seat number order
-    const groups = [];
+    const groupedStudents = [];
     for (let i = 0; i < students.length; i += 5) {
-      groups.push(students.slice(i, i + 5));
+      groupedStudents.push(students.slice(i, i + 5));
     }
-    return groups;
-  };
-
-  const groups = createGroups();
+    return groupedStudents;
+  }, [getSeatData, totalCapacity]);
 
   return (
     <StyledScrollContainer>

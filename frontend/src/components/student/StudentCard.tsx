@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import {
   StyledStudentCard,
   StyledSeatHeader,
@@ -17,22 +17,54 @@ interface StudentCardProps {
   hasRealtimeUpdate?: boolean;
 }
 
-export const StudentCard: React.FC<StudentCardProps> = ({ 
+const realtimeStyle = {
+  transform: 'scale(1.05)',
+  boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+  transition: 'all 0.3s ease'
+};
+
+const normalStyle = {
+  transform: 'scale(1)',
+  transition: 'all 0.3s ease'
+};
+
+export const StudentCard: React.FC<StudentCardProps> = React.memo(({ 
   student, 
   onUpdateScore, 
   formatSeatNumber,
   hasRealtimeUpdate = false
 }) => {
+  const className = useMemo(() => 
+    `${student.isGuest ? 'student-empty' : 'student-occupied'} ${hasRealtimeUpdate ? 'realtime-update' : ''}`,
+    [student.isGuest, hasRealtimeUpdate]
+  );
+
+  const cardStyle = useMemo(() => 
+    hasRealtimeUpdate ? realtimeStyle : normalStyle,
+    [hasRealtimeUpdate]
+  );
+
+  const handleDecreaseScore = useCallback(() => {
+    if (!student.isGuest && student.score > 0 && student.id) {
+      onUpdateScore(student.id, -1);
+    }
+  }, [student.isGuest, student.score, student.id, onUpdateScore]);
+
+  const handleIncreaseScore = useCallback(() => {
+    if (!student.isGuest && student.score < 100 && student.id) {
+      onUpdateScore(student.id, 1);
+    }
+  }, [student.isGuest, student.score, student.id, onUpdateScore]);
+
+  const canDecrease = !student.isGuest && student.score > 0;
+  const canIncrease = !student.isGuest && student.score < 100;
+
   return (
     <StyledStudentCard 
       $isGuest={student.isGuest}
       data-seat={student.seatNumber}
-      className={`${student.isGuest ? 'student-empty' : 'student-occupied'} ${hasRealtimeUpdate ? 'realtime-update' : ''}`}
-      style={{
-        transform: hasRealtimeUpdate ? 'scale(1.05)' : 'scale(1)',
-        boxShadow: hasRealtimeUpdate ? '0 4px 12px rgba(59, 130, 246, 0.3)' : undefined,
-        transition: 'all 0.3s ease'
-      }}
+      className={className}
+      style={cardStyle}
     >
       <StyledSeatHeader $isGuest={student.isGuest}>
         {formatSeatNumber(student.seatNumber!)}
@@ -43,9 +75,9 @@ export const StudentCard: React.FC<StudentCardProps> = ({
       <StyledScoreContainer>
         <StyledScoreButton 
           $type="decrease" 
-          $disabled={student.isGuest || student.score <= 0}
-          disabled={student.isGuest || student.score <= 0}
-          onClick={() => !student.isGuest && student.score > 0 && student.id && onUpdateScore(student.id, -1)}
+          $disabled={!canDecrease}
+          disabled={!canDecrease}
+          onClick={handleDecreaseScore}
         >
           -1
         </StyledScoreButton>
@@ -54,9 +86,9 @@ export const StudentCard: React.FC<StudentCardProps> = ({
         </StyledScoreBadge>
         <StyledScoreButton 
           $type="increase" 
-          $disabled={student.isGuest || student.score >= 100}
-          disabled={student.isGuest || student.score >= 100}
-          onClick={() => !student.isGuest && student.score < 100 && student.id && onUpdateScore(student.id, 1)}
+          $disabled={!canIncrease}
+          disabled={!canIncrease}
+          onClick={handleIncreaseScore}
         >
           +1
         </StyledScoreButton>
@@ -64,4 +96,4 @@ export const StudentCard: React.FC<StudentCardProps> = ({
       </StyledScoreContainer>
     </StyledStudentCard>
   );
-};
+});

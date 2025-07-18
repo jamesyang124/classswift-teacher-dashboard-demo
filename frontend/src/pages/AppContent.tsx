@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import styled from 'styled-components'
 import ClassJoinModal from '../components/modal/ClassJoinModal'
 import ClassMgmtModal from '../components/modal/ClassMgmtModal'
@@ -52,37 +52,38 @@ export const AppContent: React.FC<AppContentProps> = () => {
     };
   }, []);
 
-  const handleSelectClass = (classId: string) => {
+  const handleSelectClass = useCallback((classId: string) => {
+    // Batch state updates to prevent multiple re-renders
     setSelectedClassId(classId);
-    setShowLeftModal(true);
+    setShowLeftModal(true);  
     setShowRightModal(true);
-  };
+  }, []);
 
-  // Get current mode for selected class (defaults to scan mode)
-  const getCurrentScanMode = (classId: string) => {
+  // Get current mode for selected class (defaults to scan mode) - memoized
+  const getCurrentScanMode = useCallback((classId: string) => {
     return directScanModes[classId] !== undefined ? directScanModes[classId] : true;
-  };
+  }, [directScanModes]);
 
-  const handleModeToggle = (classId: string) => {
+  const handleModeToggle = useCallback((classId: string) => {
     setDirectScanModes(prev => ({
       ...prev,
       [classId]: !getCurrentScanMode(classId)
     }));
-  };
+  }, [getCurrentScanMode]);
 
-  const handleCloseLeftModal = () => {
+  const handleCloseLeftModal = useCallback(() => {
     setShowLeftModal(false);
-  };
+  }, []);
 
-  const handleCloseRightModal = () => {
+  const handleCloseRightModal = useCallback(() => {
     setShowRightModal(false);
-  };
+  }, []);
 
-  const handleBackToClassList = () => {
+  const handleBackToClassList = useCallback(() => {
     // Close both modals and return to class list
     setShowLeftModal(false);
     setShowRightModal(false);
-  };
+  }, []);
 
   return (
     <AppContainer>
@@ -95,11 +96,23 @@ export const AppContent: React.FC<AppContentProps> = () => {
       </ClassListContainer>
       
       {/* Modals overlay on top of class list */}
-      {(showLeftModal || showRightModal) && (
+      {(showLeftModal || showRightModal) && selectedClassId && (
         <ModalOverlay>
           <ModalContainer $showLeftModal={showLeftModal} $showRightModal={showRightModal}>
-            {showLeftModal && selectedClassId && <ClassJoinModal onClose={handleCloseLeftModal} onBackToClassList={handleBackToClassList} classId={selectedClassId} isDirectMode={getCurrentScanMode(selectedClassId)} />}
-            {showRightModal && selectedClassId && <ClassMgmtModal onClose={handleCloseRightModal} classId={selectedClassId} />}
+            {showLeftModal && (
+              <ClassJoinModal 
+                onClose={handleCloseLeftModal} 
+                onBackToClassList={handleBackToClassList} 
+                classId={selectedClassId} 
+                isDirectMode={getCurrentScanMode(selectedClassId)} 
+              />
+            )}
+            {showRightModal && (
+              <ClassMgmtModal 
+                onClose={handleCloseRightModal} 
+                classId={selectedClassId} 
+              />
+            )}
           </ModalContainer>
         </ModalOverlay>
       )}

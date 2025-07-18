@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useDispatch } from 'react-redux';
 import styled from 'styled-components';
 import { TabNavigation, StudentGrid, GroupView } from '../student';
@@ -38,19 +38,35 @@ const ClassMgmtModal: React.FC<ClassMgmtModalProps> = ({ onClose, classId }) => 
   } = useClassInfo(classId);
 
   const [activeTab, setActiveTab] = useState<'student' | 'group'>('student');
+  const [isInitialized, setIsInitialized] = useState(false);
   const { connect, lastMessage } = useWebSocket();
 
-  // Initialize seats only on first time opening - subsequent opens preserve layout
+  // Defer heavy initialization to avoid blocking modal expansion
   useEffect(() => {
-    if (classId && totalCapacity > 0) {
-      dispatch(syncWithInitialStudents({ classId, capacity: totalCapacity, forceReset: false }));
-    }
-  }, [classId, totalCapacity, dispatch]);
+    // Use requestIdleCallback to initialize after modal is visible
+    const initializeModal = () => {
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+          if (classId && totalCapacity > 0) {
+            dispatch(syncWithInitialStudents({ classId, capacity: totalCapacity, forceReset: false }));
+            connect(classId);
+            setIsInitialized(true);
+          }
+        });
+      } else {
+        // Fallback for browsers without requestIdleCallback
+        setTimeout(() => {
+          if (classId && totalCapacity > 0) {
+            dispatch(syncWithInitialStudents({ classId, capacity: totalCapacity, forceReset: false }));
+            connect(classId);
+            setIsInitialized(true);
+          }
+        }, 0);
+      }
+    };
 
-  // Connect to websocket when modal opens
-  useEffect(() => {
-    connect(classId);
-  }, [classId, connect]);
+    initializeModal();
+  }, [classId, totalCapacity, dispatch, connect]);
 
   // Handle websocket class updates
   useEffect(() => {
@@ -73,19 +89,19 @@ const ClassMgmtModal: React.FC<ClassMgmtModalProps> = ({ onClose, classId }) => 
     }
   }, [lastMessage, dispatch, classId]);
 
-  const formatSeatNumber = (id: number) => id.toString().padStart(2, '0');
+  const formatSeatNumber = useCallback((id: number) => id.toString().padStart(2, '0'), []);
 
-  const handleClearAllScores = () => {
+  const handleClearAllScores = useCallback(() => {
     dispatch(clearAllScores(classId));
-  };
+  }, [dispatch, classId]);
 
-  const handleResetAllSeats = () => {
+  const handleResetAllSeats = useCallback(() => {
     // Reset seats entirely on client side - no backend API call needed
     dispatch(syncWithInitialStudents({ classId, capacity: totalCapacity, forceReset: true }));
-  };
+  }, [dispatch, classId, totalCapacity]);
 
-  // Helper function to get seat data from the seat map
-  const getSeatData = (seatNumber: number) => {
+  // Helper function to get seat data from the seat map - memoized to prevent recreation
+  const getSeatData = useCallback((seatNumber: number) => {
     const seat = seatMap[seatNumber];
     if (!seat || seat.isEmpty) {
       return {
@@ -105,14 +121,31 @@ const ClassMgmtModal: React.FC<ClassMgmtModalProps> = ({ onClose, classId }) => 
       isGuest: seat.isGuest,
       isEmpty: seat.isEmpty
     };
-  };
+  }, [seatMap]);
 
   // Helper function to handle score updates
-  const handleUpdateScore = (studentId: number, change: number) => {
+  const handleUpdateScore = useCallback((studentId: number, change: number) => {
     dispatch(updateStudentScore({ classId, studentId, change }));
-  };
+  }, [dispatch, classId]);
 
-  const renderContent = () => {
+  const renderContent = useMemo(() => {
+    // Show loading state until initialization is complete
+    if (!isInitialized) {
+      return (
+        <div style={{
+          padding: '40px',
+          textAlign: 'center',
+          color: '#666',
+          backgroundColor: '#f8f9fa',
+          borderRadius: '12px',
+          margin: '16px'
+        }}>
+          <div style={{ marginBottom: '16px' }}>Loading classroom...</div>
+          <LoadingSpinner />
+        </div>
+      );
+    }
+
     if (activeTab === 'group') {
       return (
         <GroupView 
@@ -131,10 +164,13 @@ const ClassMgmtModal: React.FC<ClassMgmtModalProps> = ({ onClose, classId }) => 
         handleUpdateScore={handleUpdateScore}
       />
     );
-  };
+  }, [activeTab, formatSeatNumber, getSeatData, totalCapacity, handleUpdateScore, isInitialized]);
 
-  // Calculate seated count directly from seat map to ensure accuracy
-  const seatedCount = Object.values(seatMap).filter(seat => !seat.isEmpty).length;
+  // Calculate seated count directly from seat map to ensure accuracy - memoized
+  const seatedCount = useMemo(() => 
+    Object.values(seatMap).filter(seat => !seat.isEmpty).length,
+    [seatMap]
+  );
 
   return (
     <StyledModalContent>
@@ -155,7 +191,7 @@ const ClassMgmtModal: React.FC<ClassMgmtModalProps> = ({ onClose, classId }) => 
         onResetAllSeats={handleResetAllSeats}
         classId={classId}
       />
-      {renderContent()}
+      {renderContent}
     </StyledModalContent>
   );
 };
@@ -164,6 +200,21 @@ const CloseButton = styled(StyledCloseButton)`
   position: absolute;
   top: 8px;
   right: 8px;
+`;
+
+const LoadingSpinner = styled.div`
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e3e3e3;
+  border-top: 3px solid #3498db;
+  border-radius: 50%;
+  margin: 0 auto;
+  animation: spin 1s linear infinite;
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
 `;
 
 const ModalHeader = styled(StyledModalHeader)`

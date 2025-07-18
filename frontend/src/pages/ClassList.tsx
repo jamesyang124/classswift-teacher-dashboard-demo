@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import { apiService } from '../services/api';
 import { config } from '../config/env';
@@ -10,6 +10,59 @@ interface ClassListProps {
   onToggleMode?: (classId: string) => void;
   getCurrentMode?: (classId: string) => boolean;
 }
+
+// Memoized ClassCard component to prevent unnecessary re-renders
+const ClassCardComponent = React.memo<{
+  classInfo: ClassInfo;
+  onClassClick: (classId: string) => void;
+  onModeToggle: (classId: string, event: React.MouseEvent) => void;
+  getCurrentMode?: (classId: string) => boolean;
+}>(({ classInfo, onClassClick, onModeToggle, getCurrentMode }) => {
+  const isScanMode = getCurrentMode ? getCurrentMode(classInfo.publicId) : true;
+  
+  const handleClick = useCallback(() => {
+    onClassClick(classInfo.publicId);
+  }, [onClassClick, classInfo.publicId]);
+  
+  const handleToggle = useCallback((e: React.MouseEvent) => {
+    onModeToggle(classInfo.publicId, e);
+  }, [onModeToggle, classInfo.publicId]);
+
+  const createdDate = useMemo(() => 
+    new Date(classInfo.createdAt).toLocaleDateString(),
+    [classInfo.createdAt]
+  );
+
+  return (
+    <ClassCard
+      onClick={handleClick}
+      $isActive={classInfo.isActive}
+    >
+      <ClassHeader>
+        <ClassName>{classInfo.name}</ClassName>
+        <ClassStatus $isActive={classInfo.isActive}>
+          {classInfo.isActive ? 'Active' : 'Inactive'}
+        </ClassStatus>
+      </ClassHeader>
+      <ClassDetails>
+        <ClassId>ID: {classInfo.publicId}</ClassId>
+        <ClassDateRow>
+          <ClassDate>
+            Created: {createdDate}
+          </ClassDate>
+          {config.features.isDemoMode && (
+            <ModeToggleButton
+              onClick={handleToggle}
+              $isScanMode={isScanMode}
+            >
+              {isScanMode ? '📷 Scan Mode' : '📱 Demo Mode'}
+            </ModeToggleButton>
+          )}
+        </ClassDateRow>
+      </ClassDetails>
+    </ClassCard>
+  );
+});
 
 export const ClassList: React.FC<ClassListProps> = ({ onSelectClass, onToggleMode, getCurrentMode }) => {
   const [classes, setClasses] = useState<ClassInfo[]>([]);
@@ -33,18 +86,18 @@ export const ClassList: React.FC<ClassListProps> = ({ onSelectClass, onToggleMod
     fetchClasses();
   }, []);
 
-  const handleClassClick = (classId: string) => {
+  const handleClassClick = useCallback((classId: string) => {
     if (onSelectClass) {
       onSelectClass(classId);
     }
-  };
+  }, [onSelectClass]);
 
-  const handleModeToggle = (classId: string, event: React.MouseEvent) => {
+  const handleModeToggle = useCallback((classId: string, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent class card click
     if (onToggleMode) {
       onToggleMode(classId);
     }
-  };
+  }, [onToggleMode]);
 
   if (loading) {
     return (
@@ -71,39 +124,15 @@ export const ClassList: React.FC<ClassListProps> = ({ onSelectClass, onToggleMod
         <EmptyMessage>No classes found</EmptyMessage>
       ) : (
         <ClassGrid>
-          {classes.map((classInfo) => {
-            const isScanMode = getCurrentMode ? getCurrentMode(classInfo.publicId) : true;
-            return (
-              <ClassCard
-                key={classInfo.publicId}
-                onClick={() => handleClassClick(classInfo.publicId)}
-                $isActive={classInfo.isActive}
-              >
-                <ClassHeader>
-                  <ClassName>{classInfo.name}</ClassName>
-                  <ClassStatus $isActive={classInfo.isActive}>
-                    {classInfo.isActive ? 'Active' : 'Inactive'}
-                  </ClassStatus>
-                </ClassHeader>
-                <ClassDetails>
-                  <ClassId>ID: {classInfo.publicId}</ClassId>
-                  <ClassDateRow>
-                    <ClassDate>
-                      Created: {new Date(classInfo.createdAt).toLocaleDateString()}
-                    </ClassDate>
-                    {config.features.isDemoMode && (
-                      <ModeToggleButton
-                        onClick={(e) => handleModeToggle(classInfo.publicId, e)}
-                        $isScanMode={isScanMode}
-                      >
-                        {isScanMode ? '📷 Scan Mode' : '📱 Demo Mode'}
-                      </ModeToggleButton>
-                    )}
-                  </ClassDateRow>
-                </ClassDetails>
-              </ClassCard>
-            );
-          })}
+          {classes.map((classInfo) => (
+            <ClassCardComponent
+              key={classInfo.publicId}
+              classInfo={classInfo}
+              onClassClick={handleClassClick}
+              onModeToggle={handleModeToggle}
+              getCurrentMode={getCurrentMode}
+            />
+          ))}
         </ClassGrid>
       )}
     </Container>

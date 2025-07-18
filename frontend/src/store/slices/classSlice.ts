@@ -35,21 +35,20 @@ const createDefaultSeatMap = (capacity: number = 30): ClassSeatMap => {
 
 // Removed studentsToSeatMap - no longer needed since we don't fetch students from API
 
-// Helper function to assign seat number based on preferences and availability
+// Optimized helper function to assign seat number with early exit
 const assignSeatNumber = (preferredSeatNumber: number | null, seatMap: ClassSeatMap, totalCapacity: number): number => {
   // If preferred seat is available (truly empty, not occupied by guest or enrolled student), use it
   if (preferredSeatNumber && 
       preferredSeatNumber > 0 && 
       preferredSeatNumber <= totalCapacity && 
-      seatMap[preferredSeatNumber] && 
-      seatMap[preferredSeatNumber].isEmpty) {
+      seatMap[preferredSeatNumber]?.isEmpty) {
     return preferredSeatNumber;
   }
   
   // If preferred seat is occupied (guest or enrolled student) or invalid, 
   // find lowest available seat number in ASC order (only truly empty seats)
   for (let i = 1; i <= totalCapacity; i++) {
-    if (seatMap[i] && seatMap[i].isEmpty) {
+    if (seatMap[i]?.isEmpty) {
       return i;
     }
   }
@@ -58,15 +57,40 @@ const assignSeatNumber = (preferredSeatNumber: number | null, seatMap: ClassSeat
   return 0;
 };
 
-// Helper function to recalculate available slots from seat map
+// Optimized helper function to recalculate available slots from seat map
 const calculateAvailableSlots = (seatMap: ClassSeatMap, totalCapacity: number): number => {
   let emptyCount = 0;
   for (let i = 1; i <= totalCapacity; i++) {
-    if (seatMap[i] && seatMap[i].isEmpty) {
+    if (seatMap[i]?.isEmpty) {
       emptyCount++;
     }
   }
   return emptyCount;
+};
+
+// Optimized helper to find student seat without nested loops
+const findStudentSeat = (seatMap: ClassSeatMap, studentId: number): number | null => {
+  for (let i = 1; i <= Object.keys(seatMap).length; i++) {
+    if (seatMap[i]?.studentId === studentId) {
+      return i;
+    }
+  }
+  return null;
+};
+
+// Optimized helper to remove student from seat map
+const removeStudentFromSeatMap = (seatMap: ClassSeatMap, studentId: number): boolean => {
+  const seatNumber = findStudentSeat(seatMap, studentId);
+  if (seatNumber) {
+    seatMap[seatNumber] = {
+      studentName: '',
+      isGuest: false,
+      isEmpty: true,
+      score: 0,
+    };
+    return true;
+  }
+  return false;
 };
 
 export const fetchClassInfo = createAsyncThunk(
@@ -127,28 +151,19 @@ const classesSlice = createSlice({
     }>) => {
       const { studentId, excludeClassId } = action.payload;
       
-      // Search through ALL classes to find and remove this student
+      // Search through ALL classes to find and remove this student - optimized
       Object.keys(state.classes).forEach(classId => {
         if (excludeClassId && classId === excludeClassId) {
           return; // Skip the excluded class
         }
         
         const classData = state.classes[classId];
-        Object.keys(classData.seatMap).forEach(seatNum => {
-          const seat = classData.seatMap[Number(seatNum)];
-          if (seat.studentId === studentId) {
-            // Mark seat as empty
-            classData.seatMap[Number(seatNum)] = {
-              studentName: '',
-              isGuest: false,
-              isEmpty: true,
-              score: 0,
-            };
-            
-            // Recalculate available slots
-            classData.availableSlots = calculateAvailableSlots(classData.seatMap, classData.totalCapacity);
-          }
-        });
+        const wasRemoved = removeStudentFromSeatMap(classData.seatMap, studentId);
+        
+        // Only recalculate slots if student was actually found and removed
+        if (wasRemoved) {
+          classData.availableSlots = calculateAvailableSlots(classData.seatMap, classData.totalCapacity);
+        }
       });
     },
     handleStudentClassChange: (state, action: PayloadAction<{
@@ -158,27 +173,15 @@ const classesSlice = createSlice({
     }>) => {
       const { studentId, fromClassId } = action.payload;
       
-      // Remove student from their previous class
+      // Remove student from their previous class - optimized
       if (state.classes[fromClassId]) {
         const fromClass = state.classes[fromClassId];
-        Object.keys(fromClass.seatMap).forEach(seatNum => {
-          const seat = fromClass.seatMap[Number(seatNum)];
-          if (seat.studentId === studentId) {
-            // Mark seat as empty
-            fromClass.seatMap[Number(seatNum)] = {
-              studentName: '',
-              isGuest: false,
-              isEmpty: true,
-              score: 0,
-            };
-            
-            // Update counts
-            if (!seat.isGuest) {
-            }
-            // Recalculate available slots
-            fromClass.availableSlots = calculateAvailableSlots(fromClass.seatMap, fromClass.totalCapacity);
-          }
-        });
+        const wasRemoved = removeStudentFromSeatMap(fromClass.seatMap, studentId);
+        
+        // Only recalculate if student was actually removed
+        if (wasRemoved) {
+          fromClass.availableSlots = calculateAvailableSlots(fromClass.seatMap, fromClass.totalCapacity);
+        }
       }
     },
     updateSeatFromWebSocket: (state, action: PayloadAction<{
@@ -194,56 +197,32 @@ const classesSlice = createSlice({
       const { classId, joiningStudent } = action.payload;
       const classData = state.classes[classId];
       
-      // Check if this enrolled student is already in another class and remove them first
+      // Check if this enrolled student is already in another class and remove them first - optimized
       if (joiningStudent.id) {
         // Search through ALL classes to find if this student is already seated somewhere
         Object.keys(state.classes).forEach(existingClassId => {
           if (existingClassId !== classId) { // Don't check the class they're joining
             const existingClass = state.classes[existingClassId];
-            Object.keys(existingClass.seatMap).forEach(seatNum => {
-              const seat = existingClass.seatMap[Number(seatNum)];
-              if (seat.studentId === joiningStudent.id) {
-                // Found the student in another class - remove them
-                existingClass.seatMap[Number(seatNum)] = {
-                  studentName: '',
-                  isGuest: false,
-                  isEmpty: true,
-                  score: 0,
-                };
-                
-                // Update counts for the class they're leaving
-                if (!seat.isGuest) {
-                }
-                // Recalculate available slots
-                existingClass.availableSlots = calculateAvailableSlots(existingClass.seatMap, existingClass.totalCapacity);
-              }
-            });
+            const wasRemoved = removeStudentFromSeatMap(existingClass.seatMap, joiningStudent.id);
+            
+            // Only recalculate if student was actually found and removed
+            if (wasRemoved) {
+              existingClass.availableSlots = calculateAvailableSlots(existingClass.seatMap, existingClass.totalCapacity);
+            }
           }
         });
       }
       
-      // Also handle explicit fromClassId if provided (for backward compatibility)
+      // Also handle explicit fromClassId if provided (for backward compatibility) - optimized
       if (joiningStudent.fromClassId && joiningStudent.fromClassId !== classId && joiningStudent.id) {
         if (state.classes[joiningStudent.fromClassId]) {
           const fromClass = state.classes[joiningStudent.fromClassId];
-          Object.keys(fromClass.seatMap).forEach(seatNum => {
-            const seat = fromClass.seatMap[Number(seatNum)];
-            if (seat.studentId === joiningStudent.id) {
-              // Mark seat as empty
-              fromClass.seatMap[Number(seatNum)] = {
-                studentName: '',
-                isGuest: false,
-                isEmpty: true,
-                score: 0,
-              };
-              
-              // Update counts
-              if (!seat.isGuest) {
-                }
-              // Recalculate available slots
-              fromClass.availableSlots = calculateAvailableSlots(fromClass.seatMap, fromClass.totalCapacity);
-            }
-          });
+          const wasRemoved = removeStudentFromSeatMap(fromClass.seatMap, joiningStudent.id);
+          
+          // Only recalculate if student was actually removed
+          if (wasRemoved) {
+            fromClass.availableSlots = calculateAvailableSlots(fromClass.seatMap, fromClass.totalCapacity);
+          }
         }
       }
       
@@ -307,13 +286,11 @@ const classesSlice = createSlice({
       const classData = state.classes[classId];
       
       if (classData) {
-        // Find the seat with this student ID
-        Object.keys(classData.seatMap).forEach(seatNum => {
-          const seat = classData.seatMap[Number(seatNum)];
-          if (seat.studentId === studentId && !seat.isGuest) {
-            seat.score = Math.max(0, Math.min(100, seat.score + change));
-          }
-        });
+        // Find the seat with this student ID - optimized
+        const seatNumber = findStudentSeat(classData.seatMap, studentId);
+        if (seatNumber && !classData.seatMap[seatNumber].isGuest) {
+          classData.seatMap[seatNumber].score = Math.max(0, Math.min(100, classData.seatMap[seatNumber].score + change));
+        }
       }
     },
     removeStudentFromClass: (state, action: PayloadAction<{
@@ -324,22 +301,13 @@ const classesSlice = createSlice({
       const classData = state.classes[classId];
       
       if (classData) {
-        // Find and remove student from seat map
-        Object.keys(classData.seatMap).forEach(seatNum => {
-          const seat = classData.seatMap[Number(seatNum)];
-          if (seat.studentId === studentId) {
-            // Mark seat as empty
-            classData.seatMap[Number(seatNum)] = {
-              studentName: '',
-              isGuest: false,
-              isEmpty: true,
-              score: 0,
-            };
-            
-            // Recalculate available slots based on actual seat map
-            classData.availableSlots = calculateAvailableSlots(classData.seatMap, classData.totalCapacity);
-          }
-        });
+        // Find and remove student from seat map - optimized
+        const wasRemoved = removeStudentFromSeatMap(classData.seatMap, studentId);
+        
+        // Only recalculate if student was actually removed
+        if (wasRemoved) {
+          classData.availableSlots = calculateAvailableSlots(classData.seatMap, classData.totalCapacity);
+        }
       }
     },
     clearAllScores: (state, action: PayloadAction<string>) => {
@@ -347,12 +315,13 @@ const classesSlice = createSlice({
       const classData = state.classes[classId];
       
       if (classData) {
-        Object.keys(classData.seatMap).forEach(seatNum => {
-          const seat = classData.seatMap[Number(seatNum)];
-          if (!seat.isGuest && !seat.isEmpty) {
+        // Optimized to avoid Object.keys iteration
+        for (let i = 1; i <= classData.totalCapacity; i++) {
+          const seat = classData.seatMap[i];
+          if (seat && !seat.isGuest && !seat.isEmpty) {
             seat.score = 0;
           }
-        });
+        }
       }
     },
     updateStudentSeatAcrossClasses: (state, action: PayloadAction<{
@@ -364,24 +333,15 @@ const classesSlice = createSlice({
     }>) => {
       const { studentId, studentName, fromClassId, toClassId, preferredSeatNumber } = action.payload;
       
-      // Free seat from original class if specified
+      // Free seat from original class if specified - optimized
       if (fromClassId && state.classes[fromClassId]) {
         const fromClass = state.classes[fromClassId];
-        Object.keys(fromClass.seatMap).forEach(seatNum => {
-          const seat = fromClass.seatMap[Number(seatNum)];
-          if (seat.studentId === studentId) {
-            fromClass.seatMap[Number(seatNum)] = {
-              studentName: '',
-              isGuest: false,
-              isEmpty: true,
-              score: 0,
-            };
-            if (!seat.isGuest) {
-            }
-            // Recalculate available slots based on actual seat map
-            fromClass.availableSlots = calculateAvailableSlots(fromClass.seatMap, fromClass.totalCapacity);
-          }
-        });
+        const wasRemoved = removeStudentFromSeatMap(fromClass.seatMap, studentId);
+        
+        // Only recalculate if student was actually removed
+        if (wasRemoved) {
+          fromClass.availableSlots = calculateAvailableSlots(fromClass.seatMap, fromClass.totalCapacity);
+        }
       }
       
       // Assign seat in new class using preferred seat logic
